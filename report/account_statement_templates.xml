@@ -40,13 +40,13 @@
                                     <div style="font-size: 12px; opacity: 0.7;">por 1.00 USD</div>
                                 </div>
                                 <div class="col-6 text-end">
-                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">
+                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.95;">
                                         Total de Órdenes
                                     </div>
                                     <div style="font-size: 36px; font-weight: 900; line-height: 1.1;">
                                         <t t-esc="total_orders"/>
                                     </div>
-                                    <div style="font-size: 12px; opacity: 0.7;">órdenes incluidas</div>
+                                    <div style="font-size: 12px; opacity: 0.95;">órdenes incluidas</div>
                                 </div>
                             </div>
                         </div>
@@ -274,7 +274,7 @@
                                                     <t t-esc="ml.get('product_name', '')"/>
                                                 </td>
                                                 <td class="text-end" style="padding: 5px 6px;">
-                                                    <t t-esc="'%.2f' % ml.get('qty_ordered', 0)"/> <small><t t-esc="ml.get('uom', 'm²')"/></small>
+                                                    <t t-esc="'%.2f' % ml.get('qty_ordered', 0)"/> <span style="font-size: 7px;"><t t-esc="ml.get('uom', 'm²')"/></span>
                                                 </td>
                                                 <td class="text-end" style="padding: 5px 6px; color: #28a745;">
                                                     <t t-esc="'%.2f' % ml.get('qty_delivered', 0)"/>
