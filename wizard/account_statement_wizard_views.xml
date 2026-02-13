@@ -5,34 +5,122 @@
         <field name="model">account.statement.wizard</field>
         <field name="arch" type="xml">
             <form string="Generar Estado de Cuenta">
-                <group>
-                    <group string="Filtros Principales">
-                        <field name="partner_id" options="{'no_create': True}"/>
-                        <field name="project_id" options="{'no_create': True}" optional="show"/>
-                    </group>
-                    <group string="Rango de Fechas (Opcional)">
-                        <field name="date_from"/>
-                        <field name="date_to"/>
-                    </group>
-                </group>
-                <group>
-                    <group string="Opciones">
-                        <field name="include_draft"/>
-                        <field name="include_fully_paid"/>
-                    </group>
-                    <group string="Tipo de Cambio">
-                        <field name="exchange_rate" widget="monetary_field"/>
-                        <div class="alert alert-info" role="alert">
-                            <small>
-                                <i class="fa fa-info-circle me-1"/>
-                                Tipo de cambio Banorte usado para conversiones USD ↔ MXN.
-                            </small>
+                <div class="container-fluid p-0">
+                    <!-- Header / Banner -->
+                    <div class="bg-primary text-white rounded-top p-3 mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-file-text-o fa-2x me-3"/>
+                            <div>
+                                <h3 class="mb-0">Estado de Cuenta</h3>
+                                <small class="opacity-75">Configure los parámetros para generar el reporte</small>
+                            </div>
                         </div>
-                    </group>
-                </group>
-                <footer>
-                    <button string="Generar Estado de Cuenta" name="action_print_statement" type="object" class="btn-primary" icon="fa-print"/>
-                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                    </div>
+
+                    <!-- Sección: Cliente y Proyecto -->
+                    <div class="row mx-0 mb-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-light py-2">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-user me-2 text-primary"/>Información del Cliente
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <group col="2">
+                                        <field name="partner_id"
+                                               options="{'no_create': True}"
+                                               placeholder="Seleccione un cliente..."
+                                               class="fw-bold"/>
+                                        <field name="project_id"
+                                               options="{'no_create': True}"
+                                               optional="show"
+                                               placeholder="Filtrar por proyecto..."/>
+                                    </group>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Fechas -->
+                    <div class="row mx-0 mb-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-light py-2">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-calendar me-2 text-primary"/>Rango de Fechas
+                                        <small class="text-muted ms-2">(Opcional)</small>
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <group col="2">
+                                        <field name="date_from" placeholder="Desde..."/>
+                                        <field name="date_to" placeholder="Hasta..."/>
+                                    </group>
+                                    <div class="alert alert-light border mt-2 mb-0 py-2" role="alert">
+                                        <small>
+                                            <i class="fa fa-lightbulb-o me-1 text-warning"/>
+                                            Si no se especifican fechas, se incluirán todos los documentos disponibles.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Opciones y Tipo de Cambio -->
+                    <div class="row mx-0 mb-3">
+                        <div class="col-md-6 pe-md-2">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-light py-2">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-sliders me-2 text-primary"/>Opciones de Filtrado
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <group>
+                                        <field name="include_draft" widget="boolean_toggle"/>
+                                        <field name="include_fully_paid" widget="boolean_toggle"/>
+                                    </group>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 ps-md-2">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-light py-2">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-money me-2 text-primary"/>Tipo de Cambio
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <group>
+                                        <field name="exchange_rate" widget="monetary_field"/>
+                                    </group>
+                                    <div class="alert alert-info border-0 mt-2 mb-0 py-2" role="alert">
+                                        <small>
+                                            <i class="fa fa-info-circle me-1"/>
+                                            Tipo de cambio Banorte para conversiones
+                                            <strong>USD ↔ MXN</strong>.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer con botones -->
+                <footer class="pt-3">
+                    <button string="Generar Estado de Cuenta"
+                            name="action_print_statement"
+                            type="object"
+                            class="btn-primary btn-lg"
+                            icon="fa-print"
+                            data-hotkey="q"/>
+                    <button string="Cancelar"
+                            class="btn-secondary btn-lg ms-2"
+                            special="cancel"
+                            data-hotkey="x"/>
                 </footer>
             </form>
         </field>
@@ -43,5 +131,6 @@
         <field name="res_model">account.statement.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
+        <field name="context">{'dialog_size': 'extra-large'}</field>
     </record>
 </odoo>
