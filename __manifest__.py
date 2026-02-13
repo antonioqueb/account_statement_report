@@ -1,0 +1,20 @@
+{
+    'name': 'Estado de Cuenta - Reporte de Clientes',
+    'version': '19.0.1.0.0',
+    'category': 'Sales/Sales',
+    'summary': 'Reporte PDF de estado de cuenta por cliente y/o proyecto',
+    'author': 'Alphaqueb Consulting SAS',
+    'website': 'https://alphaqueb.com',
+    'depends': ['sale', 'sale_stock', 'account', 'stock'],
+    'data': [
+        'security/ir.model.access.csv',
+        'wizard/account_statement_wizard_views.xml',
+        'report/account_statement_report.xml',
+        'report/account_statement_templates.xml',
+        'views/menu_views.xml',
+    ],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+    'license': 'LGPL-3',
+}

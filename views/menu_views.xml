@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menú dentro de Ventas > Reportes -->
+    <menuitem id="menu_account_statement_report" 
+              name="Estado de Cuenta" 
+              parent="sale.menu_sale_report"
+              action="account_statement_report.action_account_statement_wizard"
+              sequence="99"
+              groups="sales_team.group_sale_salesman"/>
+</odoo>

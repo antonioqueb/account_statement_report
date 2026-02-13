@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_statement_wizard_form" model="ir.ui.view">
+        <field name="name">account.statement.wizard.form</field>
+        <field name="model">account.statement.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generar Estado de Cuenta">
+                <group>
+                    <group string="Filtros Principales">
+                        <field name="partner_id" options="{'no_create': True}"/>
+                        <field name="project_id" options="{'no_create': True}" optional="show"/>
+                    </group>
+                    <group string="Rango de Fechas (Opcional)">
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Opciones">
+                        <field name="include_draft"/>
+                        <field name="include_fully_paid"/>
+                    </group>
+                    <group string="Tipo de Cambio">
+                        <field name="exchange_rate" widget="monetary_field"/>
+                        <div class="alert alert-info" role="alert">
+                            <small>
+                                <i class="fa fa-info-circle me-1"/>
+                                Tipo de cambio Banorte usado para conversiones USD ↔ MXN.
+                            </small>
+                        </div>
+                    </group>
+                </group>
+                <footer>
+                    <button string="Generar Estado de Cuenta" name="action_print_statement" type="object" class="btn-primary" icon="fa-print"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_account_statement_wizard" model="ir.actions.act_window">
+        <field name="name">Estado de Cuenta</field>
+        <field name="res_model">account.statement.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

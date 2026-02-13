@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!-- REPORTE PRINCIPAL: ESTADO DE CUENTA                          -->
+    <!-- ============================================================ -->
+    <template id="report_account_statement_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wizard">
+                <t t-set="data" t-value="data or {}"/>
+                <t t-set="banorte_rate" t-value="data.get('banorte_rate', 0)"/>
+                <t t-set="orders_data" t-value="data.get('orders_data', [])"/>
+
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000;">
+
+                        <!-- ======================================== -->
+                        <!-- PÁGINA 1: PORTADA Y RESUMEN              -->
+                        <!-- ======================================== -->
+
+                        <!-- ENCABEZADO PRINCIPAL -->
+                        <div style="border-bottom: 4px solid #000; padding-bottom: 12px; margin-bottom: 20px;">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h2 style="font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin: 0; font-size: 28px;">
+                                        ESTADO DE CUENTA
+                                    </h2>
+                                    <div style="font-size: 12px; color: #555; margin-top: 4px;">
+                                        Fecha de emisión: <strong t-esc="data.get('statement_date', '')"/>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div style="font-size: 10px; color: #999;">
+                                        Impreso: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TIPO DE CAMBIO DESTACADO -->
+                        <div style="background-color: #1a1a2e; color: #fff; padding: 16px 24px; border-radius: 8px; margin-bottom: 24px;">
+                            <div class="row" style="align-items: center;">
+                                <div class="col-6">
+                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">
+                                        Tipo de Cambio Banorte del Día
+                                    </div>
+                                    <div style="font-size: 36px; font-weight: 900; line-height: 1.1;">
+                                        $<t t-esc="'%.4f' % banorte_rate"/> MXN
+                                    </div>
+                                    <div style="font-size: 12px; opacity: 0.7;">por 1.00 USD</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7;">
+                                        Total de Órdenes
+                                    </div>
+                                    <div style="font-size: 36px; font-weight: 900; line-height: 1.1;">
+                                        <t t-esc="data.get('total_orders', 0)"/>
+                                    </div>
+                                    <div style="font-size: 12px; opacity: 0.7;">órdenes incluidas</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DATOS DEL CLIENTE -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <div style="border-left: 4px solid #000; padding-left: 12px;">
+                                    <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 1px;">
+                                        Cliente
+                                    </div>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">
+                                        <t t-esc="data.get('partner_name', '')"/>
+                                    </div>
+                                    <div t-if="data.get('partner_vat')" style="font-size: 11px; color: #555;">
+                                        RFC: <t t-esc="data.get('partner_vat', '')"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6" t-if="data.get('project_name')">
+                                <div style="border-left: 4px solid #555; padding-left: 12px;">
+                                    <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 1px;">
+                                        Proyecto
+                                    </div>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">
+                                        <t t-esc="data.get('project_name', '')"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ======================================== -->
+                        <!-- RESUMEN DE SALDOS                        -->
+                        <!-- ======================================== -->
+                        <div style="margin-bottom: 30px;">
+                            <div style="background-color: #f5f5f5; padding: 4px 12px; margin-bottom: 2px;">
+                                <strong style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Resumen de Saldos</strong>
+                            </div>
+
+                            <table class="table" style="font-size: 12px; border-collapse: collapse; width: 100%; margin-bottom: 0;">
+                                <thead>
+                                    <tr style="background-color: #000; color: #fff;">
+                                        <th style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff;">Concepto</th>
+                                        <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 25%;">Dólares (USD)</th>
+                                        <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 25%;">Pesos (MXN)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom: 1px solid #ddd;">
+                                        <td style="padding: 8px 12px;">Total Facturado</td>
+                                        <td class="text-end" style="padding: 8px 12px;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_amount_usd', 0))"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 8px 12px;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_amount_mxn', 0))"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid #ddd;">
+                                        <td style="padding: 8px 12px;">Total Pagado</td>
+                                        <td class="text-end" style="padding: 8px 12px; color: #28a745;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_paid_usd', 0))"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 8px 12px; color: #28a745;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_paid_mxn', 0))"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="background-color: #fff3cd; border-top: 3px solid #000;">
+                                        <td style="padding: 12px; font-weight: 900; font-size: 14px;">
+                                            SALDO PENDIENTE
+                                        </td>
+                                        <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 16px; color: #c00;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_usd', 0))"/> USD
+                                        </td>
+                                        <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 16px; color: #c00;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_mxn', 0))"/> MXN
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- TABLA RESUMEN DE ÓRDENES -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="background-color: #f5f5f5; padding: 4px 12px; margin-bottom: 2px;">
+                                <strong style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Desglose por Orden de Venta</strong>
+                            </div>
+                            <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: #2f2f2f; color: #fff;">
+                                        <th style="padding: 6px 8px; color: #fff; font-weight: 700;"># Orden</th>
+                                        <th style="padding: 6px 8px; color: #fff; font-weight: 700;">Fecha</th>
+                                        <th style="padding: 6px 8px; color: #fff; font-weight: 700;">Moneda</th>
+                                        <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Total</th>
+                                        <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Pagado</th>
+                                        <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Saldo USD</th>
+                                        <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Saldo MXN</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="orders_data" t-as="od">
+                                        <tr style="border-bottom: 1px solid #ddd;">
+                                            <td style="padding: 5px 8px; font-weight: 700;">
+                                                <t t-esc="od.get('order_name', '')"/>
+                                            </td>
+                                            <td style="padding: 5px 8px;">
+                                                <t t-esc="str(od['order'].date_order.date()) if od['order'].date_order else ''"/>
+                                            </td>
+                                            <td style="padding: 5px 8px;">
+                                                <t t-esc="od.get('currency', '')"/>
+                                            </td>
+                                            <td class="text-end" style="padding: 5px 8px;">
+                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_total', 0))"/>
+                                            </td>
+                                            <td class="text-end" style="padding: 5px 8px; color: #28a745;">
+                                                $<t t-esc="'{:,.2f}'.format(od.get('total_paid', 0))"/>
+                                            </td>
+                                            <td class="text-end" style="padding: 5px 8px; font-weight: 700; color: #c00;">
+                                                $<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/>
+                                            </td>
+                                            <td class="text-end" style="padding: 5px 8px; font-weight: 700; color: #c00;">
+                                                $<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background-color: #000; color: #fff;">
+                                        <td colspan="5" style="padding: 8px; font-weight: 900; color: #fff; font-size: 11px;">
+                                            TOTALES
+                                        </td>
+                                        <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_usd', 0))"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">
+                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_mxn', 0))"/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- ======================================== -->
+                        <!-- DETALLE POR ORDEN DE VENTA               -->
+                        <!-- ======================================== -->
+                        <t t-foreach="orders_data" t-as="od">
+                            <div style="page-break-before: always;"/>
+
+                            <!-- HEADER DE CADA ORDEN -->
+                            <div style="border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
+                                <div class="row" style="align-items: center;">
+                                    <div class="col-5">
+                                        <h3 style="font-weight: 900; margin: 0; font-size: 20px;">
+                                            DETALLE: <t t-esc="od.get('order_name', '')"/>
+                                        </h3>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div style="font-size: 10px; color: #555;">
+                                            Moneda: <strong style="font-size: 14px;"><t t-esc="od.get('currency', '')"/></strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-3 text-end">
+                                        <div style="font-size: 10px; color: #555;">
+                                            Fecha: <strong><t t-esc="str(od['order'].date_order.date()) if od['order'].date_order else ''"/></strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Info del cliente para esta orden -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div style="font-size: 10px; color: #888; text-transform: uppercase;">Cliente</div>
+                                    <div style="font-size: 14px; font-weight: 700;">
+                                        <t t-esc="data.get('partner_name', '')"/>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div style="font-size: 10px; color: #888; text-transform: uppercase;">Vendedor</div>
+                                    <div style="font-size: 11px;">
+                                        <t t-esc="od['order'].user_id.name or ''"/>
+                                    </div>
+                                </div>
+                                <div class="col-3 text-end">
+                                    <div style="background: #1a1a2e; color: #fff; padding: 6px 10px; border-radius: 4px; display: inline-block;">
+                                        <div style="font-size: 8px; text-transform: uppercase; opacity: 0.7;">TC Banorte</div>
+                                        <div style="font-size: 16px; font-weight: 900;">$<t t-esc="'%.4f' % banorte_rate"/></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TABLA DE MATERIALES -->
+                            <t t-if="od.get('material_lines')">
+                                <div style="background-color: #eee; padding: 3px 10px; margin-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Materiales</strong>
+                                </div>
+
+                                <table class="table table-sm" style="font-size: 9px; width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background-color: #000; color: #fff;">
+                                            <th style="padding: 6px; color: #fff; font-weight: 700; width: 3%;">#</th>
+                                            <th style="padding: 6px; color: #fff; font-weight: 700; width: 22%;">Material</th>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 8%;">Vendido</th>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 8%;">Entregado</th>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 8%;">Pendiente</th>
+                                            <th class="text-center" style="padding: 6px; color: #fff; font-weight: 700; width: 6%;">% Entrega</th>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 10%;">
+                                                P.U. <t t-esc="od.get('currency', '')"/>
+                                            </th>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 10%;">
+                                                P.U. <t t-esc="od['material_lines'][0].get('currency_alt', '') if od.get('material_lines') else ''"/>
+                                            </th>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 12%;">
+                                                Total <t t-esc="od.get('currency', '')"/>
+                                            </th>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 12%;">
+                                                Total <t t-esc="od['material_lines'][0].get('currency_alt', '') if od.get('material_lines') else ''"/>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-set="mat_seq" t-value="1"/>
+                                        <t t-foreach="od.get('material_lines', [])" t-as="ml">
+                                            <tr style="border-bottom: 1px solid #ddd;">
+                                                <td style="padding: 5px 6px;" class="text-center">
+                                                    <t t-esc="mat_seq"/>
+                                                    <t t-set="mat_seq" t-value="mat_seq + 1"/>
+                                                </td>
+                                                <td style="padding: 5px 6px; font-weight: 600;">
+                                                    <t t-esc="ml.get('product_name', '')"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px;">
+                                                    <t t-esc="'%.2f' % ml.get('qty_ordered', 0)"/> <small><t t-esc="ml.get('uom', 'm²')"/></small>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px; color: #28a745;">
+                                                    <t t-esc="'%.2f' % ml.get('qty_delivered', 0)"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px; color: #c00; font-weight: 700;">
+                                                    <t t-esc="'%.2f' % ml.get('qty_pending', 0)"/>
+                                                </td>
+                                                <td class="text-center" style="padding: 5px 6px;">
+                                                    <t t-set="pct" t-value="ml.get('pct_delivered', 0)"/>
+                                                    <div t-att-style="'background-color: %s; color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700;' % ('#28a745' if pct >= 100 else '#ffc107' if pct >= 50 else '#dc3545')">
+                                                        <t t-esc="'%.0f' % pct"/>%
+                                                    </div>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px;">
+                                                    $<t t-esc="'{:,.2f}'.format(ml.get('price_unit', 0))"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px; color: #555;">
+                                                    $<t t-esc="'{:,.2f}'.format(ml.get('price_unit_alt', 0))"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px; font-weight: 700;">
+                                                    $<t t-esc="'{:,.2f}'.format(ml.get('subtotal', 0))"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px; color: #555;">
+                                                    $<t t-esc="'{:,.2f}'.format(ml.get('subtotal_alt', 0))"/>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+
+                            <!-- TABLA DE SERVICIOS -->
+                            <t t-if="od.get('service_lines')">
+                                <div style="background-color: #eee; padding: 3px 10px; margin-bottom: 2px; margin-top: 10px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase;">Servicios Adicionales</strong>
+                                </div>
+                                <table class="table table-sm" style="font-size: 9px; width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background-color: #2f2f2f; color: #fff;">
+                                            <th style="padding: 5px; color: #fff; font-weight: 700;">Descripción</th>
+                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">Cantidad</th>
+                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">
+                                                P.U. <t t-esc="od.get('currency', '')"/>
+                                            </th>
+                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">
+                                                Total <t t-esc="od.get('currency', '')"/>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="od.get('service_lines', [])" t-as="sl">
+                                            <tr style="border-bottom: 1px solid #ddd;">
+                                                <td style="padding: 4px 5px;"><t t-esc="sl.get('product_name', '')"/></td>
+                                                <td class="text-end" style="padding: 4px 5px;">
+                                                    <t t-esc="'%.2f' % sl.get('qty_ordered', 0)"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 4px 5px;">
+                                                    $<t t-esc="'{:,.2f}'.format(sl.get('price_unit', 0))"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 4px 5px; font-weight: 700;">
+                                                    $<t t-esc="'{:,.2f}'.format(sl.get('subtotal', 0))"/>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+
+                            <!-- TOTALES DE LA ORDEN -->
+                            <div class="row mt-2">
+                                <div class="col-6"></div>
+                                <div class="col-6">
+                                    <table class="table table-sm" style="font-size: 10px; border-top: 2px solid #000; width: 100%;">
+                                        <tr>
+                                            <td class="text-end" style="padding: 4px 8px;"><strong>SUBTOTAL</strong></td>
+                                            <td class="text-end" style="padding: 4px 8px; width: 35%;">
+                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_untaxed', 0))"/> <small><t t-esc="od.get('currency', '')"/></small>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-end" style="padding: 4px 8px; color: #555;"><strong>IVA</strong></td>
+                                            <td class="text-end" style="padding: 4px 8px; color: #555;">
+                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_tax', 0))"/>
+                                            </td>
+                                        </tr>
+                                        <tr style="border-top: 1px solid #ccc;">
+                                            <td class="text-end" style="padding: 6px 8px; font-weight: 900; font-size: 12px;">TOTAL</td>
+                                            <td class="text-end" style="padding: 6px 8px; font-weight: 900; font-size: 14px;">
+                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_total', 0))"/> <t t-esc="od.get('currency', '')"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- PAGOS RELACIONADOS -->
+                            <div style="margin-top: 16px;">
+                                <div style="background-color: #d4edda; padding: 3px 10px; margin-bottom: 2px;">
+                                    <strong style="font-size: 10px; text-transform: uppercase; color: #155724;">
+                                        Pagos Registrados
+                                    </strong>
+                                </div>
+
+                                <t t-if="od.get('payments')">
+                                    <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="background-color: #28a745; color: #fff;">
+                                                <th style="padding: 5px 8px; color: #fff; font-weight: 700;">Folio de Pago</th>
+                                                <th style="padding: 5px 8px; color: #fff; font-weight: 700;">Fecha</th>
+                                                <th style="padding: 5px 8px; color: #fff; font-weight: 700;">Moneda</th>
+                                                <th class="text-end" style="padding: 5px 8px; color: #fff; font-weight: 700;">Monto Pagado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="od.get('payments', [])" t-as="pmt">
+                                                <tr style="border-bottom: 1px solid #ddd;">
+                                                    <td style="padding: 4px 8px; font-weight: 600;">
+                                                        <t t-esc="pmt.get('name', '')"/>
+                                                    </td>
+                                                    <td style="padding: 4px 8px;">
+                                                        <t t-esc="str(pmt.get('date', ''))"/>
+                                                    </td>
+                                                    <td style="padding: 4px 8px;">
+                                                        <t t-esc="pmt.get('currency', '')"/>
+                                                    </td>
+                                                    <td class="text-end" style="padding: 4px 8px; font-weight: 700; color: #28a745;">
+                                                        $<t t-esc="'{:,.2f}'.format(pmt.get('amount', 0))"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background-color: #f0f0f0; border-top: 2px solid #28a745;">
+                                                <td colspan="3" style="padding: 6px 8px; font-weight: 900;">
+                                                    TOTAL PAGADO
+                                                </td>
+                                                <td class="text-end" style="padding: 6px 8px; font-weight: 900; color: #28a745; font-size: 12px;">
+                                                    $<t t-esc="'{:,.2f}'.format(od.get('total_paid', 0))"/> <t t-esc="od.get('currency', '')"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </t>
+                                <t t-else="">
+                                    <div style="padding: 10px; background: #fff3cd; font-size: 11px; font-style: italic; text-align: center;">
+                                        No se han registrado pagos para esta orden.
+                                    </div>
+                                </t>
+                            </div>
+
+                            <!-- SALDO PENDIENTE DE ESTA ORDEN -->
+                            <div style="margin-top: 16px; border: 3px solid #c00; border-radius: 6px; overflow: hidden;">
+                                <div style="background-color: #c00; color: #fff; padding: 6px 12px;">
+                                    <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+                                        Saldo Pendiente — <t t-esc="od.get('order_name', '')"/>
+                                    </strong>
+                                </div>
+                                <div class="row" style="padding: 12px 16px; background: #fff5f5;">
+                                    <div class="col-6 text-center">
+                                        <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Dólares</div>
+                                        <div style="font-size: 22px; font-weight: 900; color: #c00;">
+                                            $<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/> USD
+                                        </div>
+                                    </div>
+                                    <div class="col-6 text-center">
+                                        <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Pesos</div>
+                                        <div style="font-size: 22px; font-weight: 900; color: #c00;">
+                                            $<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/> MXN
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </t>
+                        <!-- FIN DEL LOOP DE ÓRDENES -->
+
+                        <!-- ======================================== -->
+                        <!-- DISCLAIMER FINAL                         -->
+                        <!-- ======================================== -->
+                        <div style="page-break-before: always;"/>
+                        
+                        <!-- Resumen Final Consolidado -->
+                        <div style="border: 3px solid #000; border-radius: 8px; overflow: hidden; margin-bottom: 30px;">
+                            <div style="background-color: #000; color: #fff; padding: 12px 16px;">
+                                <h4 style="margin: 0; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
+                                    Resumen Final — Estado de Cuenta
+                                </h4>
+                                <div style="font-size: 11px; opacity: 0.7;">
+                                    <t t-esc="data.get('partner_name', '')"/> | <t t-esc="data.get('statement_date', '')"/>
+                                </div>
+                            </div>
+                            <div class="row" style="padding: 20px;">
+                                <div class="col-6 text-center" style="border-right: 2px solid #eee;">
+                                    <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">
+                                        Saldo Total Pendiente USD
+                                    </div>
+                                    <div style="font-size: 32px; font-weight: 900; color: #c00; margin-top: 4px;">
+                                        $<t t-esc="'{:,.2f}'.format(data.get('total_balance_usd', 0))"/>
+                                    </div>
+                                    <div style="font-size: 11px; color: #555;">Dólares Americanos</div>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">
+                                        Saldo Total Pendiente MXN
+                                    </div>
+                                    <div style="font-size: 32px; font-weight: 900; color: #c00; margin-top: 4px;">
+                                        $<t t-esc="'{:,.2f}'.format(data.get('total_balance_mxn', 0))"/>
+                                    </div>
+                                    <div style="font-size: 11px; color: #555;">Pesos Mexicanos</div>
+                                </div>
+                            </div>
+                            <div style="background-color: #f8f9fa; padding: 8px 16px; border-top: 1px solid #eee;">
+                                <div class="row">
+                                    <div class="col-4 text-center">
+                                        <small style="color: #888;">Tipo de Cambio Banorte:</small><br/>
+                                        <strong>$<t t-esc="'%.4f' % banorte_rate"/> MXN/USD</strong>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <small style="color: #888;">Órdenes Incluidas:</small><br/>
+                                        <strong><t t-esc="data.get('total_orders', 0)"/></strong>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <small style="color: #888;">Fecha del Estado:</small><br/>
+                                        <strong><t t-esc="data.get('statement_date', '')"/></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DISCLAIMER -->
+                        <div style="border: 1px solid #ccc; padding: 12px 16px; background-color: #fafafa; margin-top: 20px;">
+                            <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 4px; text-transform: uppercase;">
+                                Aviso Importante — Términos y Condiciones
+                            </strong>
+                            <div style="font-size: 9px; text-align: justify; color: #333; line-height: 1.4;">
+                                <p style="margin-bottom: 4px;">
+                                    <strong>1. VALIDEZ:</strong> Este estado de cuenta refleja los saldos al momento de su emisión. 
+                                    Los montos pueden variar si existen pagos o ajustes posteriores a la fecha de generación del documento.
+                                </p>
+                                <p style="margin-bottom: 4px;">
+                                    <strong>2. TIPO DE CAMBIO:</strong> Las conversiones entre USD y MXN se realizan utilizando el tipo de cambio 
+                                    de venta publicado por Banorte vigente al día de emisión de este documento. Este tipo de cambio es referencial 
+                                    y puede diferir del aplicado en transacciones bancarias individuales.
+                                </p>
+                                <p style="margin-bottom: 4px;">
+                                    <strong>3. PAGOS:</strong> Los pagos reflejados son aquellos que han sido registrados y conciliados en nuestro sistema 
+                                    al momento de la generación de este documento. Pagos en tránsito o no conciliados podrían no aparecer reflejados.
+                                </p>
+                                <p style="margin-bottom: 4px;">
+                                    <strong>4. ENTREGAS:</strong> Las cantidades entregadas corresponden a los registros de salida de almacén validados. 
+                                    Entregas parciales en proceso podrían no estar reflejadas en su totalidad.
+                                </p>
+                                <p style="margin-bottom: 0;">
+                                    <strong>5. DISCREPANCIAS:</strong> En caso de encontrar alguna discrepancia en este estado de cuenta, 
+                                    favor de comunicarse con su ejecutivo de ventas asignado en un plazo no mayor a 5 días hábiles 
+                                    a partir de la recepción de este documento.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- FIRMAS -->
+                        <div style="margin-top: 50px; page-break-inside: avoid;">
+                            <div class="row" style="margin-top: 40px;">
+                                <div class="col-1"></div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">ELABORÓ</strong>
+                                    </div>
+                                </div>
+                                <div class="col-2"></div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
+                                        <strong style="font-size: 9px; text-transform: uppercase;">RECIBIÓ</strong>
+                                    </div>
+                                </div>
+                                <div class="col-1"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
