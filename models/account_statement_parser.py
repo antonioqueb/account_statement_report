@@ -14,17 +14,11 @@ class AccountStatementReportParser(models.AbstractModel):
         if not data:
             data = {}
         
-        _logger.info("PARSER DATA KEYS: %s", list(data.keys()))
-        _logger.info("INNER DATA KEYS: %s", list((data.get('data', {})).keys()))
-        
-        # Odoo envuelve data dentro de {'data': {...}} al usar report_action
-        report_data = data.get('data', data)
-        
         wizard = self.env['account.statement.wizard'].browse(docids)
         
         return {
             'doc_ids': docids,
             'doc_model': 'account.statement.wizard',
             'docs': wizard,
-            'data': report_data,
+            'data': data,
         }
