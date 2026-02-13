@@ -19,7 +19,6 @@ class SaleOrder(models.Model):
         invoices = self._get_related_invoices()
         payments = self.env['account.payment']
         for inv in invoices:
-            # Buscar pagos reconciliados con la factura
             for partial in inv._get_reconciled_payments():
                 payments |= partial
         return payments
@@ -27,11 +26,11 @@ class SaleOrder(models.Model):
     def _get_statement_data(self, banorte_rate=0.0):
         """
         Retorna datos consolidados para el estado de cuenta.
+        100% datos primitivos serializables - sin recordsets.
         """
         self.ensure_one()
         currency_name = self.currency_id.name or 'USD'
         
-        # Líneas de materiales (no servicios, no secciones)
         material_lines = []
         service_lines = []
         
@@ -60,7 +59,6 @@ class SaleOrder(models.Model):
                 'uom': line.product_uom_id.name if line.product_uom_id else 'm²',
             }
             
-            # Calcular equivalente en la otra moneda
             if currency_name == 'USD' and banorte_rate > 0:
                 line_data['price_unit_alt'] = line.price_unit * banorte_rate
                 line_data['subtotal_alt'] = line.price_subtotal * banorte_rate
@@ -91,11 +89,10 @@ class SaleOrder(models.Model):
             for payment in inv._get_reconciled_payments():
                 payments_data.append({
                     'name': payment.name or '',
-                    'date': payment.date,
+                    'date': str(payment.date) if payment.date else '',
                     'amount': payment.amount,
                     'currency': payment.currency_id.name,
                 })
-                # Convertir a la moneda de la orden si es diferente
                 if payment.currency_id == self.currency_id:
                     total_paid += payment.amount
                 elif payment.currency_id.name == 'MXN' and currency_name == 'USD' and banorte_rate > 0:
@@ -105,13 +102,11 @@ class SaleOrder(models.Model):
                 else:
                     total_paid += payment.amount
         
-        # Totales de la orden
         amount_total = self.amount_total
         amount_untaxed = self.amount_untaxed
         amount_tax = self.amount_tax
         balance = amount_total - total_paid
         
-        # Saldo en ambas monedas
         if currency_name == 'USD' and banorte_rate > 0:
             balance_usd = balance
             balance_mxn = balance * banorte_rate
@@ -129,8 +124,9 @@ class SaleOrder(models.Model):
             total_mxn = amount_total if currency_name == 'MXN' else 0.0
         
         return {
-            'order': self,
             'order_name': self.name,
+            'order_date': str(self.date_order.date()) if self.date_order else '',
+            'seller_name': self.user_id.name or '',
             'currency': currency_name,
             'material_lines': material_lines,
             'service_lines': service_lines,

@@ -1,22 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ============================================================ -->
-    <!-- REPORTE PRINCIPAL: ESTADO DE CUENTA                          -->
-    <!-- ============================================================ -->
     <template id="report_account_statement_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="wizard">
-                <t t-set="data" t-value="data or {}"/>
-                <t t-set="banorte_rate" t-value="data.get('banorte_rate', 0)"/>
-                <t t-set="orders_data" t-value="data.get('orders_data', [])"/>
+                <t t-set="d" t-value="data or {}"/>
+                <t t-set="banorte_rate" t-value="d.get('banorte_rate', 0)"/>
+                <t t-set="orders_data" t-value="d.get('orders_data', [])"/>
 
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000;">
-
-                        <!-- ======================================== -->
-                        <!-- PÁGINA 1: PORTADA Y RESUMEN              -->
-                        <!-- ======================================== -->
 
                         <!-- ENCABEZADO PRINCIPAL -->
                         <div style="border-bottom: 4px solid #000; padding-bottom: 12px; margin-bottom: 20px;">
@@ -26,7 +19,7 @@
                                         ESTADO DE CUENTA
                                     </h2>
                                     <div style="font-size: 12px; color: #555; margin-top: 4px;">
-                                        Fecha de emisión: <strong t-esc="data.get('statement_date', '')"/>
+                                        Fecha de emisión: <strong t-esc="d.get('statement_date', '')"/>
                                     </div>
                                 </div>
                                 <div class="col-4 text-end">
@@ -54,7 +47,7 @@
                                         Total de Órdenes
                                     </div>
                                     <div style="font-size: 36px; font-weight: 900; line-height: 1.1;">
-                                        <t t-esc="data.get('total_orders', 0)"/>
+                                        <t t-esc="d.get('total_orders', 0)"/>
                                     </div>
                                     <div style="font-size: 12px; opacity: 0.7;">órdenes incluidas</div>
                                 </div>
@@ -69,28 +62,26 @@
                                         Cliente
                                     </div>
                                     <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">
-                                        <t t-esc="data.get('partner_name', '')"/>
+                                        <t t-esc="d.get('partner_name', '')"/>
                                     </div>
-                                    <div t-if="data.get('partner_vat')" style="font-size: 11px; color: #555;">
-                                        RFC: <t t-esc="data.get('partner_vat', '')"/>
+                                    <div t-if="d.get('partner_vat')" style="font-size: 11px; color: #555;">
+                                        RFC: <t t-esc="d.get('partner_vat', '')"/>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-6" t-if="data.get('project_name')">
+                            <div class="col-6" t-if="d.get('project_name')">
                                 <div style="border-left: 4px solid #555; padding-left: 12px;">
                                     <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 1px;">
                                         Proyecto
                                     </div>
                                     <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">
-                                        <t t-esc="data.get('project_name', '')"/>
+                                        <t t-esc="d.get('project_name', '')"/>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ======================================== -->
-                        <!-- RESUMEN DE SALDOS                        -->
-                        <!-- ======================================== -->
+                        <!-- RESUMEN DE SALDOS -->
                         <div style="margin-bottom: 30px;">
                             <div style="background-color: #f5f5f5; padding: 4px 12px; margin-bottom: 2px;">
                                 <strong style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Resumen de Saldos</strong>
@@ -108,19 +99,19 @@
                                     <tr style="border-bottom: 1px solid #ddd;">
                                         <td style="padding: 8px 12px;">Total Facturado</td>
                                         <td class="text-end" style="padding: 8px 12px;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_amount_usd', 0))"/>
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_amount_usd', 0))"/>
                                         </td>
                                         <td class="text-end" style="padding: 8px 12px;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_amount_mxn', 0))"/>
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_amount_mxn', 0))"/>
                                         </td>
                                     </tr>
                                     <tr style="border-bottom: 1px solid #ddd;">
                                         <td style="padding: 8px 12px;">Total Pagado</td>
                                         <td class="text-end" style="padding: 8px 12px; color: #28a745;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_paid_usd', 0))"/>
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_paid_usd', 0))"/>
                                         </td>
                                         <td class="text-end" style="padding: 8px 12px; color: #28a745;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_paid_mxn', 0))"/>
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_paid_mxn', 0))"/>
                                         </td>
                                     </tr>
                                     <tr style="background-color: #fff3cd; border-top: 3px solid #000;">
@@ -128,10 +119,10 @@
                                             SALDO PENDIENTE
                                         </td>
                                         <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 16px; color: #c00;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_usd', 0))"/> USD
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_balance_usd', 0))"/> USD
                                         </td>
                                         <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 16px; color: #c00;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_mxn', 0))"/> MXN
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_balance_mxn', 0))"/> MXN
                                         </td>
                                     </tr>
                                 </tbody>
@@ -162,7 +153,7 @@
                                                 <t t-esc="od.get('order_name', '')"/>
                                             </td>
                                             <td style="padding: 5px 8px;">
-                                                <t t-esc="str(od['order'].date_order.date()) if od['order'].date_order else ''"/>
+                                                <t t-esc="od.get('order_date', '')"/>
                                             </td>
                                             <td style="padding: 5px 8px;">
                                                 <t t-esc="od.get('currency', '')"/>
@@ -188,19 +179,17 @@
                                             TOTALES
                                         </td>
                                         <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_usd', 0))"/>
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_balance_usd', 0))"/>
                                         </td>
                                         <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">
-                                            $<t t-esc="'{:,.2f}'.format(data.get('total_balance_mxn', 0))"/>
+                                            $<t t-esc="'{:,.2f}'.format(d.get('total_balance_mxn', 0))"/>
                                         </td>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
 
-                        <!-- ======================================== -->
-                        <!-- DETALLE POR ORDEN DE VENTA               -->
-                        <!-- ======================================== -->
+                        <!-- DETALLE POR ORDEN DE VENTA -->
                         <t t-foreach="orders_data" t-as="od">
                             <div style="page-break-before: always;"/>
 
@@ -219,7 +208,7 @@
                                     </div>
                                     <div class="col-3 text-end">
                                         <div style="font-size: 10px; color: #555;">
-                                            Fecha: <strong><t t-esc="str(od['order'].date_order.date()) if od['order'].date_order else ''"/></strong>
+                                            Fecha: <strong><t t-esc="od.get('order_date', '')"/></strong>
                                         </div>
                                     </div>
                                 </div>
@@ -230,13 +219,13 @@
                                 <div class="col-6">
                                     <div style="font-size: 10px; color: #888; text-transform: uppercase;">Cliente</div>
                                     <div style="font-size: 14px; font-weight: 700;">
-                                        <t t-esc="data.get('partner_name', '')"/>
+                                        <t t-esc="d.get('partner_name', '')"/>
                                     </div>
                                 </div>
                                 <div class="col-3">
                                     <div style="font-size: 10px; color: #888; text-transform: uppercase;">Vendedor</div>
                                     <div style="font-size: 11px;">
-                                        <t t-esc="od['order'].user_id.name or ''"/>
+                                        <t t-esc="od.get('seller_name', '')"/>
                                     </div>
                                 </div>
                                 <div class="col-3 text-end">
@@ -266,13 +255,13 @@
                                                 P.U. <t t-esc="od.get('currency', '')"/>
                                             </th>
                                             <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 10%;">
-                                                P.U. <t t-esc="od['material_lines'][0].get('currency_alt', '') if od.get('material_lines') else ''"/>
+                                                P.U. <t t-esc="od.get('material_lines', [{}])[0].get('currency_alt', '')"/>
                                             </th>
                                             <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 12%;">
                                                 Total <t t-esc="od.get('currency', '')"/>
                                             </th>
                                             <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 12%;">
-                                                Total <t t-esc="od['material_lines'][0].get('currency_alt', '') if od.get('material_lines') else ''"/>
+                                                Total <t t-esc="od.get('material_lines', [{}])[0].get('currency_alt', '')"/>
                                             </th>
                                         </tr>
                                     </thead>
@@ -298,7 +287,8 @@
                                                 </td>
                                                 <td class="text-center" style="padding: 5px 6px;">
                                                     <t t-set="pct" t-value="ml.get('pct_delivered', 0)"/>
-                                                    <div t-att-style="'background-color: %s; color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700;' % ('#28a745' if pct >= 100 else '#ffc107' if pct >= 50 else '#dc3545')">
+                                                    <t t-set="pct_color" t-value="'#28a745' if pct &gt;= 100 else '#ffc107' if pct &gt;= 50 else '#dc3545'"/>
+                                                    <div t-attf-style="background-color: {{pct_color}}; color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700;">
                                                         <t t-esc="'%.0f' % pct"/>%
                                                     </div>
                                                 </td>
@@ -409,7 +399,7 @@
                                                         <t t-esc="pmt.get('name', '')"/>
                                                     </td>
                                                     <td style="padding: 4px 8px;">
-                                                        <t t-esc="str(pmt.get('date', ''))"/>
+                                                        <t t-esc="pmt.get('date', '')"/>
                                                     </td>
                                                     <td style="padding: 4px 8px;">
                                                         <t t-esc="pmt.get('currency', '')"/>
@@ -465,9 +455,7 @@
                         </t>
                         <!-- FIN DEL LOOP DE ÓRDENES -->
 
-                        <!-- ======================================== -->
-                        <!-- DISCLAIMER FINAL                         -->
-                        <!-- ======================================== -->
+                        <!-- DISCLAIMER FINAL -->
                         <div style="page-break-before: always;"/>
                         
                         <!-- Resumen Final Consolidado -->
@@ -477,7 +465,7 @@
                                     Resumen Final — Estado de Cuenta
                                 </h4>
                                 <div style="font-size: 11px; opacity: 0.7;">
-                                    <t t-esc="data.get('partner_name', '')"/> | <t t-esc="data.get('statement_date', '')"/>
+                                    <t t-esc="d.get('partner_name', '')"/> | <t t-esc="d.get('statement_date', '')"/>
                                 </div>
                             </div>
                             <div class="row" style="padding: 20px;">
@@ -486,7 +474,7 @@
                                         Saldo Total Pendiente USD
                                     </div>
                                     <div style="font-size: 32px; font-weight: 900; color: #c00; margin-top: 4px;">
-                                        $<t t-esc="'{:,.2f}'.format(data.get('total_balance_usd', 0))"/>
+                                        $<t t-esc="'{:,.2f}'.format(d.get('total_balance_usd', 0))"/>
                                     </div>
                                     <div style="font-size: 11px; color: #555;">Dólares Americanos</div>
                                 </div>
@@ -495,7 +483,7 @@
                                         Saldo Total Pendiente MXN
                                     </div>
                                     <div style="font-size: 32px; font-weight: 900; color: #c00; margin-top: 4px;">
-                                        $<t t-esc="'{:,.2f}'.format(data.get('total_balance_mxn', 0))"/>
+                                        $<t t-esc="'{:,.2f}'.format(d.get('total_balance_mxn', 0))"/>
                                     </div>
                                     <div style="font-size: 11px; color: #555;">Pesos Mexicanos</div>
                                 </div>
@@ -508,11 +496,11 @@
                                     </div>
                                     <div class="col-4 text-center">
                                         <small style="color: #888;">Órdenes Incluidas:</small><br/>
-                                        <strong><t t-esc="data.get('total_orders', 0)"/></strong>
+                                        <strong><t t-esc="d.get('total_orders', 0)"/></strong>
                                     </div>
                                     <div class="col-4 text-center">
                                         <small style="color: #888;">Fecha del Estado:</small><br/>
-                                        <strong><t t-esc="data.get('statement_date', '')"/></strong>
+                                        <strong><t t-esc="d.get('statement_date', '')"/></strong>
                                     </div>
                                 </div>
                             </div>
