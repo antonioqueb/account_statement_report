@@ -6,7 +6,13 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">account_statement_report.account_statement</field>
         <field name="report_file">account_statement_report.account_statement</field>
-        <field name="print_report_name">'Estado de Cuenta - %s' % (object.partner_id.name)</field>
+        <field name="print_report_name">
+            'EDO %s %s a %s' % (
+                object.partner_id.name or '',
+                object.date_from.strftime('%d-%m-%Y') if object.date_from else '',
+                object.date_to.strftime('%d-%m-%Y') if object.date_to else ''
+            )
+        </field>
         <field name="paperformat_id" ref="base.paperformat_us"/>
     </record>
 </odoo>
