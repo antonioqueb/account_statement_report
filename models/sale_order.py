@@ -57,7 +57,7 @@ class SaleOrder(models.Model):
                 'tax': line.price_tax,
                 'total': line.price_total,
                 'currency': currency_name,
-                'uom': line.product_uom.name if line.product_uom else 'm²',
+                'uom': line.product_uom_id.name if line.product_uom_id else 'm²',
             }
             
             # Calcular equivalente en la otra moneda
