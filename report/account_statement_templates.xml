@@ -31,22 +31,22 @@
                         <div style="background-color: #1a1a2e; color: #fff; padding: 16px 24px; border-radius: 8px; margin-bottom: 24px;">
                             <div class="row" style="align-items: center;">
                                 <div class="col-6">
-                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.95;">
+                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">
                                         Tipo de Cambio Banorte del Día
                                     </div>
-                                    <div style="font-size: 36px; font-weight: 900; line-height: 1.1;">
+                                    <div style="font-size: 36px; font-weight: 900; line-height: 1.1; color: #fff;">
                                         $<t t-esc="'%.4f' % banorte_rate"/> MXN
                                     </div>
-                                    <div style="font-size: 12px; opacity: 0.95;">por 1.00 USD</div>
+                                    <div style="font-size: 12px; color: #ccc; font-weight: 600;">por 1.00 USD</div>
                                 </div>
                                 <div class="col-6 text-end">
-                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.95;">
+                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">
                                         Total de Órdenes
                                     </div>
-                                    <div style="font-size: 36px; font-weight: 900; line-height: 1.1;">
+                                    <div style="font-size: 36px; font-weight: 900; line-height: 1.1; color: #fff;">
                                         <t t-esc="total_orders"/>
                                     </div>
-                                    <div style="font-size: 12px; opacity: 0.95;">órdenes incluidas</div>
+                                    <div style="font-size: 12px; color: #ccc; font-weight: 600;">órdenes incluidas</div>
                                 </div>
                             </div>
                         </div>
@@ -227,8 +227,8 @@
                                 </div>
                                 <div class="col-3 text-end">
                                     <div style="background: #1a1a2e; color: #fff; padding: 6px 10px; border-radius: 4px; display: inline-block;">
-                                        <div style="font-size: 8px; text-transform: uppercase; opacity: 0.95;">TC Banorte</div>
-                                        <div style="font-size: 16px; font-weight: 900;">$<t t-esc="'%.4f' % banorte_rate"/></div>
+                                        <div style="font-size: 8px; text-transform: uppercase; color: #ccc; font-weight: 700;">TC Banorte</div>
+                                        <div style="font-size: 16px; font-weight: 900; color: #fff;">$<t t-esc="'%.4f' % banorte_rate"/></div>
                                     </div>
                                 </div>
                             </div>
@@ -352,7 +352,7 @@
                                         <tr>
                                             <td class="text-end" style="padding: 4px 8px;"><strong>SUBTOTAL</strong></td>
                                             <td class="text-end" style="padding: 4px 8px; width: 35%;">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_untaxed', 0))"/> <small><t t-esc="od.get('currency', '')"/></small>
+                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_untaxed', 0))"/> <span style="font-size: 8px;"><t t-esc="od.get('currency', '')"/></span>
                                             </td>
                                         </tr>
                                         <tr>
@@ -427,22 +427,23 @@
                             </div>
 
                             <!-- SALDO PENDIENTE DE ESTA ORDEN -->
-                            <div style="margin-top: 16px; border: 3px solid #c00; border-radius: 6px; overflow: hidden;">
-                                <div style="background-color: #c00; color: #fff; padding: 6px 12px;">
+                            <t t-set="has_balance" t-value="od.get('balance_usd', 0) &gt; 0.01 or od.get('balance_mxn', 0) &gt; 0.01"/>
+                            <div t-attf-style="margin-top: 16px; border: 3px solid {{ '#c00' if has_balance else '#999' }}; border-radius: 6px; overflow: hidden;">
+                                <div t-attf-style="background-color: {{ '#c00' if has_balance else '#999' }}; color: #fff; padding: 6px 12px;">
                                     <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
                                         Saldo Pendiente — <t t-esc="od.get('order_name', '')"/>
                                     </strong>
                                 </div>
-                                <div class="row" style="padding: 12px 16px; background: #fff5f5;">
+                                <div class="row" t-attf-style="padding: 12px 16px; background: {{ '#fff5f5' if has_balance else '#f5f5f5' }};">
                                     <div class="col-6 text-center">
                                         <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Dólares</div>
-                                        <div style="font-size: 22px; font-weight: 900; color: #c00;">
+                                        <div t-attf-style="font-size: 22px; font-weight: 900; color: {{ '#c00' if has_balance else '#999' }};">
                                             $<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/> USD
                                         </div>
                                     </div>
                                     <div class="col-6 text-center">
                                         <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Pesos</div>
-                                        <div style="font-size: 22px; font-weight: 900; color: #c00;">
+                                        <div t-attf-style="font-size: 22px; font-weight: 900; color: {{ '#c00' if has_balance else '#999' }};">
                                             $<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/> MXN
                                         </div>
                                     </div>
@@ -454,14 +455,14 @@
 
                         <!-- DISCLAIMER FINAL -->
                         <div style="page-break-before: always;"/>
-                        
+
                         <!-- Resumen Final Consolidado -->
                         <div style="border: 3px solid #000; border-radius: 8px; overflow: hidden; margin-bottom: 30px;">
                             <div style="background-color: #000; color: #fff; padding: 12px 16px;">
-                                <h4 style="margin: 0; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
+                                <h4 style="margin: 0; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #fff;">
                                     Resumen Final — Estado de Cuenta
                                 </h4>
-                                <div style="font-size: 11px; opacity: 0.95;">
+                                <div style="font-size: 11px; color: #ccc; font-weight: 600;">
                                     <t t-esc="partner_name"/> | <t t-esc="statement_date"/>
                                 </div>
                             </div>
@@ -488,15 +489,15 @@
                             <div style="background-color: #f8f9fa; padding: 8px 16px; border-top: 1px solid #eee;">
                                 <div class="row">
                                     <div class="col-4 text-center">
-                                        <small style="color: #888;">Tipo de Cambio Banorte:</small><br/>
+                                        <span style="font-size: 10px; color: #888;">Tipo de Cambio Banorte:</span><br/>
                                         <strong>$<t t-esc="'%.4f' % banorte_rate"/> MXN/USD</strong>
                                     </div>
                                     <div class="col-4 text-center">
-                                        <small style="color: #888;">Órdenes Incluidas:</small><br/>
+                                        <span style="font-size: 10px; color: #888;">Órdenes Incluidas:</span><br/>
                                         <strong><t t-esc="total_orders"/></strong>
                                     </div>
                                     <div class="col-4 text-center">
-                                        <small style="color: #888;">Fecha del Estado:</small><br/>
+                                        <span style="font-size: 10px; color: #888;">Fecha del Estado:</span><br/>
                                         <strong><t t-esc="statement_date"/></strong>
                                     </div>
                                 </div>
@@ -510,25 +511,25 @@
                             </strong>
                             <div style="font-size: 9px; text-align: justify; color: #333; line-height: 1.4;">
                                 <p style="margin-bottom: 4px;">
-                                    <strong>1. VALIDEZ:</strong> Este estado de cuenta refleja los saldos al momento de su emisión. 
+                                    <strong>1. VALIDEZ:</strong> Este estado de cuenta refleja los saldos al momento de su emisión.
                                     Los montos pueden variar si existen pagos o ajustes posteriores a la fecha de generación del documento.
                                 </p>
                                 <p style="margin-bottom: 4px;">
-                                    <strong>2. TIPO DE CAMBIO:</strong> Las conversiones entre USD y MXN se realizan utilizando el tipo de cambio 
-                                    de venta publicado por Banorte vigente al día de emisión de este documento. Este tipo de cambio es referencial 
+                                    <strong>2. TIPO DE CAMBIO:</strong> Las conversiones entre USD y MXN se realizan utilizando el tipo de cambio
+                                    de venta publicado por Banorte vigente al día de emisión de este documento. Este tipo de cambio es referencial
                                     y puede diferir del aplicado en transacciones bancarias individuales.
                                 </p>
                                 <p style="margin-bottom: 4px;">
-                                    <strong>3. PAGOS:</strong> Los pagos reflejados son aquellos que han sido registrados y conciliados en nuestro sistema 
+                                    <strong>3. PAGOS:</strong> Los pagos reflejados son aquellos que han sido registrados y conciliados en nuestro sistema
                                     al momento de la generación de este documento. Pagos en tránsito o no conciliados podrían no aparecer reflejados.
                                 </p>
                                 <p style="margin-bottom: 4px;">
-                                    <strong>4. ENTREGAS:</strong> Las cantidades entregadas corresponden a los registros de salida de almacén validados. 
+                                    <strong>4. ENTREGAS:</strong> Las cantidades entregadas corresponden a los registros de salida de almacén validados.
                                     Entregas parciales en proceso podrían no estar reflejadas en su totalidad.
                                 </p>
                                 <p style="margin-bottom: 0;">
-                                    <strong>5. DISCREPANCIAS:</strong> En caso de encontrar alguna discrepancia en este estado de cuenta, 
-                                    favor de comunicarse con su ejecutivo de ventas asignado en un plazo no mayor a 5 días hábiles 
+                                    <strong>5. DISCREPANCIAS:</strong> En caso de encontrar alguna discrepancia en este estado de cuenta,
+                                    favor de comunicarse con su ejecutivo de ventas asignado en un plazo no mayor a 5 días hábiles
                                     a partir de la recepción de este documento.
                                 </p>
                             </div>
