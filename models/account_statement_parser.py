@@ -6,7 +6,7 @@ _logger = logging.getLogger(__name__)
 
 
 class AccountStatementReportParser(models.AbstractModel):
-    _name = 'report.account_statement_report'
+    _name = 'report.account_statement_report.account_statement'
     _description = 'Parser para Estado de Cuenta'
 
     @api.model
