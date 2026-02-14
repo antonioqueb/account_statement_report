@@ -24,7 +24,7 @@ class AccountStatementWizard(models.TransientModel):
         'account_statement_wizard_sale_order_rel',
         'wizard_id', 'order_id',
         string='Órdenes Seleccionadas',
-        help='Seleccione manualmente las órdenes a incluir. Si no selecciona ninguna, se incluirán todas las órdenes abiertas según los filtros.',
+        help='Seleccione manualmente las órdenes a incluir.',
     )
     available_order_ids = fields.Many2many(
         'sale.order',
@@ -35,7 +35,21 @@ class AccountStatementWizard(models.TransientModel):
         store=False,
     )
 
-    # Campo para mostrar el tipo de cambio actual
+    # Detección de monedas disponibles
+    has_usd_orders = fields.Boolean(compute='_compute_currency_detection', store=False)
+    has_mxn_orders = fields.Boolean(compute='_compute_currency_detection', store=False)
+    detected_usd_count = fields.Integer(string='Órdenes en USD', compute='_compute_currency_detection', store=False)
+    detected_mxn_count = fields.Integer(string='Órdenes en MXN', compute='_compute_currency_detection', store=False)
+
+    # Divisa del reporte — el usuario decide
+    report_currency = fields.Selection([
+        ('mxn', 'Pesos Mexicanos (MXN)'),
+        ('usd', 'Dólares (USD)'),
+        ('both', 'Multi-moneda (USD + MXN)'),
+    ], string='Divisa del Reporte', required=True, default='mxn',
+       help='Seleccione la moneda en la que se presentará el estado de cuenta.')
+
+    # Tipo de cambio
     exchange_rate = fields.Float(
         string='Tipo de Cambio Banorte', digits=(12, 4),
         readonly=True, compute='_compute_exchange_rate',
@@ -55,10 +69,33 @@ class AccountStatementWizard(models.TransientModel):
             else:
                 rec.available_order_ids = self.env['sale.order']
 
+    @api.depends('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft')
+    def _compute_currency_detection(self):
+        for rec in self:
+            if rec.partner_id:
+                domain = rec._get_base_domain()
+                orders = self.env['sale.order'].search(domain)
+                currencies = orders.mapped('currency_id.name')
+                rec.has_usd_orders = 'USD' in currencies
+                rec.has_mxn_orders = 'MXN' in currencies
+                rec.detected_usd_count = len(orders.filtered(lambda o: o.currency_id.name == 'USD'))
+                rec.detected_mxn_count = len(orders.filtered(lambda o: o.currency_id.name == 'MXN'))
+            else:
+                rec.has_usd_orders = False
+                rec.has_mxn_orders = False
+                rec.detected_usd_count = 0
+                rec.detected_mxn_count = 0
+
     @api.onchange('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft')
     def _onchange_filters(self):
-        """Cuando cambian los filtros, resetear la selección manual"""
+        """Cuando cambian los filtros, resetear selección y auto-detectar divisa"""
         self.order_ids = False
+        if self.has_usd_orders and self.has_mxn_orders:
+            self.report_currency = 'both'
+        elif self.has_usd_orders:
+            self.report_currency = 'usd'
+        else:
+            self.report_currency = 'mxn'
 
     def _get_banorte_rate(self):
         """Obtiene el tipo de cambio Banorte del parámetro del sistema"""
@@ -68,7 +105,6 @@ class AccountStatementWizard(models.TransientModel):
         except (ValueError, TypeError):
             rate = 0.0
 
-        # Si no hay rate de Banorte, usar el rate de Odoo
         if rate <= 0:
             usd = self.env.ref('base.USD', raise_if_not_found=False)
             company_currency = self.env.company.currency_id
@@ -100,7 +136,6 @@ class AccountStatementWizard(models.TransientModel):
         if self.date_to:
             domain.append(('date_order', '<=', fields.Datetime.to_datetime(self.date_to).replace(hour=23, minute=59, second=59)))
 
-        # Excluir respaldos de cotización si el campo existe
         try:
             domain.append(('x_is_quote_backup', '=', False))
         except Exception:
@@ -113,7 +148,6 @@ class AccountStatementWizard(models.TransientModel):
         domain = self._get_base_domain()
         orders = self.env['sale.order'].search(domain, order='date_order asc')
 
-        # Filtrar solo las que tienen saldo pendiente (no pagadas al 100%)
         open_orders = self.env['sale.order']
         banorte_rate = self._get_banorte_rate()
         for order in orders:
@@ -147,7 +181,6 @@ class AccountStatementWizard(models.TransientModel):
         """Genera el reporte PDF"""
         self.ensure_one()
 
-        # Si hay órdenes seleccionadas manualmente, usar esas
         if self.order_ids:
             orders = self.order_ids.sorted(key=lambda o: o.date_order or '')
         else:
@@ -157,8 +190,8 @@ class AccountStatementWizard(models.TransientModel):
             raise UserError("No se encontraron órdenes de venta para este cliente con los filtros seleccionados.")
 
         banorte_rate = self._get_banorte_rate()
+        report_currency = self.report_currency
 
-        # Recopilar datos
         orders_data = []
         total_balance_usd = 0.0
         total_balance_mxn = 0.0
@@ -172,7 +205,6 @@ class AccountStatementWizard(models.TransientModel):
         for order in orders:
             data = order._get_statement_data(banorte_rate)
 
-            # Filtrar pagadas si no se quieren (solo cuando NO hay selección manual)
             if not self.order_ids and not self.include_fully_paid and data['balance'] <= 0.01:
                 continue
 
@@ -182,7 +214,6 @@ class AccountStatementWizard(models.TransientModel):
             total_amount_usd += data['total_usd']
             total_amount_mxn += data['total_mxn']
 
-            # Conteo por moneda
             if data['currency'] == 'USD':
                 orders_usd_count += 1
                 total_paid_usd += data['total_paid']
@@ -195,15 +226,6 @@ class AccountStatementWizard(models.TransientModel):
         if not orders_data:
             raise UserError("Todas las órdenes encontradas están pagadas al 100%. Active 'Incluir Pagadas al 100%' para verlas.")
 
-        # Determinar escenario de moneda
-        if orders_usd_count > 0 and orders_mxn_count > 0:
-            currency_scenario = 'multi_currency'
-        elif orders_usd_count > 0 and orders_mxn_count == 0:
-            currency_scenario = 'usd_only'
-        else:
-            currency_scenario = 'mxn_only'
-
-        # Guardar datos en contexto para el reporte
         data = {
             'wizard_id': self.id,
             'partner_id': self.partner_id.id,
@@ -224,7 +246,7 @@ class AccountStatementWizard(models.TransientModel):
             'total_orders': len(orders_data),
             'orders_usd_count': orders_usd_count,
             'orders_mxn_count': orders_mxn_count,
-            'currency_scenario': currency_scenario,
+            'report_currency': report_currency,
         }
 
         return self.env.ref('account_statement_report.action_report_account_statement').report_action(self, data=data)

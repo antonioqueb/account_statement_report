@@ -27,60 +27,61 @@
                             </div>
                         </div>
 
-                        <!-- BARRA DE RESUMEN: ÓRDENES + MONEDA + TC -->
+                        <!-- ============================================================ -->
+                        <!-- BARRA DE RESUMEN                                             -->
+                        <!-- ============================================================ -->
                         <div style="background-color: #1a1a2e; color: #fff; padding: 16px 24px; border-radius: 8px; margin-bottom: 24px;">
                             <div class="row" style="align-items: center;">
+
                                 <!-- Conteo de Órdenes -->
-                                <div class="col-4">
-                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">
-                                        Órdenes Incluidas
-                                    </div>
-                                    <div style="font-size: 30px; font-weight: 900; line-height: 1.1; color: #fff;">
-                                        <t t-esc="total_orders"/>
-                                    </div>
-                                    <div style="font-size: 11px; color: #ccc; margin-top: 4px;">
-                                        <t t-if="orders_usd_count > 0">
-                                            <span style="background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px; margin-right: 4px;">
-                                                <t t-esc="orders_usd_count"/> en USD
-                                            </span>
-                                        </t>
-                                        <t t-if="orders_mxn_count > 0">
-                                            <span style="background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px;">
-                                                <t t-esc="orders_mxn_count"/> en MXN
-                                            </span>
-                                        </t>
-                                    </div>
-                                </div>
-
-                                <!-- Escenario de moneda -->
-                                <div class="col-4 text-center">
-                                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">
-                                        Moneda del Reporte
-                                    </div>
-                                    <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;">
-                                        <t t-if="currency_scenario == 'usd_only'">Dólares (USD)</t>
-                                        <t t-elif="currency_scenario == 'mxn_only'">Pesos (MXN)</t>
-                                        <t t-else="">Multi-moneda</t>
-                                    </div>
-                                    <div style="font-size: 10px; color: #ccc;">
-                                        <t t-if="currency_scenario == 'usd_only'">Todas las órdenes en dólares</t>
-                                        <t t-elif="currency_scenario == 'mxn_only'">Todas las órdenes en pesos</t>
-                                        <t t-else="">Órdenes en USD y MXN</t>
-                                    </div>
-                                </div>
-
-                                <!-- Tipo de cambio — discreto -->
-                                <div class="col-4 text-end">
-                                    <t t-if="banorte_rate > 0">
-                                        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; font-weight: 600;">
-                                            TC Banorte (Ref.)
+                                <t t-if="report_currency == 'both'">
+                                    <div class="col-4">
+                                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">Órdenes Incluidas</div>
+                                        <div style="font-size: 30px; font-weight: 900; line-height: 1.1; color: #fff;"><t t-esc="total_orders"/></div>
+                                        <div style="font-size: 11px; color: #ccc; margin-top: 4px;">
+                                            <t t-if="orders_usd_count > 0">
+                                                <span style="background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px; margin-right: 4px;"><t t-esc="orders_usd_count"/> en USD</span>
+                                            </t>
+                                            <t t-if="orders_mxn_count > 0">
+                                                <span style="background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px;"><t t-esc="orders_mxn_count"/> en MXN</span>
+                                            </t>
                                         </div>
-                                        <div style="font-size: 18px; font-weight: 700; color: #ccc;">
-                                            $<t t-esc="'%.4f' % banorte_rate"/> MXN
-                                        </div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">Moneda del Reporte</div>
+                                        <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;">Multi-moneda</div>
+                                        <div style="font-size: 10px; color: #ccc;">Órdenes en USD y MXN</div>
+                                    </div>
+                                    <div class="col-4 text-end">
+                                        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; font-weight: 600;">TC Banorte (Ref.)</div>
+                                        <div style="font-size: 18px; font-weight: 700; color: #ccc;">$<t t-esc="'%.4f' % banorte_rate"/> MXN</div>
                                         <div style="font-size: 9px; color: #888;">por 1.00 USD — referencial</div>
-                                    </t>
-                                </div>
+                                    </div>
+                                </t>
+
+                                <t t-if="report_currency == 'mxn'">
+                                    <div class="col-6">
+                                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">Órdenes Incluidas</div>
+                                        <div style="font-size: 30px; font-weight: 900; line-height: 1.1; color: #fff;"><t t-esc="total_orders"/></div>
+                                        <div style="font-size: 12px; color: #ccc; font-weight: 600;">órdenes incluidas</div>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">Moneda del Reporte</div>
+                                        <div style="font-size: 24px; font-weight: 900; color: #fff; margin-top: 4px;">Pesos (MXN)</div>
+                                    </div>
+                                </t>
+
+                                <t t-if="report_currency == 'usd'">
+                                    <div class="col-6">
+                                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">Órdenes Incluidas</div>
+                                        <div style="font-size: 30px; font-weight: 900; line-height: 1.1; color: #fff;"><t t-esc="total_orders"/></div>
+                                        <div style="font-size: 12px; color: #ccc; font-weight: 600;">órdenes incluidas</div>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #ccc; font-weight: 600;">Moneda del Reporte</div>
+                                        <div style="font-size: 24px; font-weight: 900; color: #fff; margin-top: 4px;">Dólares (USD)</div>
+                                    </div>
+                                </t>
                             </div>
                         </div>
 
@@ -88,25 +89,15 @@
                         <div class="row mb-4">
                             <div class="col-6">
                                 <div style="border-left: 4px solid #000; padding-left: 12px;">
-                                    <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 1px;">
-                                        Cliente
-                                    </div>
-                                    <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">
-                                        <t t-esc="partner_name"/>
-                                    </div>
-                                    <div t-if="partner_vat" style="font-size: 11px; color: #555;">
-                                        RFC: <t t-esc="partner_vat"/>
-                                    </div>
+                                    <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 1px;">Cliente</div>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 2px;"><t t-esc="partner_name"/></div>
+                                    <div t-if="partner_vat" style="font-size: 11px; color: #555;">RFC: <t t-esc="partner_vat"/></div>
                                 </div>
                             </div>
                             <div class="col-6" t-if="project_name">
                                 <div style="border-left: 4px solid #555; padding-left: 12px;">
-                                    <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 1px;">
-                                        Proyecto
-                                    </div>
-                                    <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">
-                                        <t t-esc="project_name"/>
-                                    </div>
+                                    <div style="font-size: 10px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 1px;">Proyecto</div>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 2px;"><t t-esc="project_name"/></div>
                                 </div>
                             </div>
                         </div>
@@ -119,14 +110,66 @@
                                 <strong style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Resumen de Saldos</strong>
                             </div>
 
-                            <!-- === MULTI CURRENCY === -->
-                            <t t-if="currency_scenario == 'multi_currency'">
+                            <!-- MXN -->
+                            <t t-if="report_currency == 'mxn'">
                                 <table class="table" style="font-size: 12px; border-collapse: collapse; width: 100%; margin-bottom: 0;">
                                     <thead>
                                         <tr style="background-color: #000; color: #fff;">
-                                            <th style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff;">Concepto</th>
-                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 25%;">Dólares (USD)</th>
-                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 25%;">Pesos (MXN)</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #fff;">Concepto</th>
+                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; color: #fff; width: 35%;">Monto (MXN)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="border-bottom: 1px solid #ddd;">
+                                            <td style="padding: 8px 12px;">Total Facturado</td>
+                                            <td class="text-end" style="padding: 8px 12px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_amount_mxn)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #ddd;">
+                                            <td style="padding: 8px 12px;">Total Pagado</td>
+                                            <td class="text-end" style="padding: 8px 12px; color: #28a745; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_paid_mxn)"/></td>
+                                        </tr>
+                                        <tr style="background-color: #fff3cd; border-top: 3px solid #000;">
+                                            <td style="padding: 12px; font-weight: 900; font-size: 14px;">SALDO PENDIENTE</td>
+                                            <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 18px; color: #c00;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/> MXN</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </t>
+
+                            <!-- USD -->
+                            <t t-if="report_currency == 'usd'">
+                                <table class="table" style="font-size: 12px; border-collapse: collapse; width: 100%; margin-bottom: 0;">
+                                    <thead>
+                                        <tr style="background-color: #000; color: #fff;">
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #fff;">Concepto</th>
+                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; color: #fff; width: 35%;">Monto (USD)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="border-bottom: 1px solid #ddd;">
+                                            <td style="padding: 8px 12px;">Total Facturado</td>
+                                            <td class="text-end" style="padding: 8px 12px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_amount_usd)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #ddd;">
+                                            <td style="padding: 8px 12px;">Total Pagado</td>
+                                            <td class="text-end" style="padding: 8px 12px; color: #28a745; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_paid_usd)"/></td>
+                                        </tr>
+                                        <tr style="background-color: #fff3cd; border-top: 3px solid #000;">
+                                            <td style="padding: 12px; font-weight: 900; font-size: 14px;">SALDO PENDIENTE</td>
+                                            <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 18px; color: #c00;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/> USD</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </t>
+
+                            <!-- BOTH -->
+                            <t t-if="report_currency == 'both'">
+                                <table class="table" style="font-size: 12px; border-collapse: collapse; width: 100%; margin-bottom: 0;">
+                                    <thead>
+                                        <tr style="background-color: #000; color: #fff;">
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #fff;">Concepto</th>
+                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; color: #fff; width: 25%;">Dólares (USD)</th>
+                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; color: #fff; width: 25%;">Pesos (MXN)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -151,72 +194,6 @@
                                     * Conversiones con TC Banorte $<t t-esc="'%.4f' % banorte_rate"/> MXN/USD
                                 </div>
                             </t>
-
-                            <!-- === USD ONLY === -->
-                            <t t-if="currency_scenario == 'usd_only'">
-                                <table class="table" style="font-size: 12px; border-collapse: collapse; width: 100%; margin-bottom: 0;">
-                                    <thead>
-                                        <tr style="background-color: #000; color: #fff;">
-                                            <th style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff;">Concepto</th>
-                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 30%;">Dólares (USD)</th>
-                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 30%;">Equiv. Pesos (MXN)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr style="border-bottom: 1px solid #ddd;">
-                                            <td style="padding: 8px 12px;">Total Facturado</td>
-                                            <td class="text-end" style="padding: 8px 12px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_amount_usd)"/></td>
-                                            <td class="text-end" style="padding: 8px 12px; color: #888;">$<t t-esc="'{:,.2f}'.format(total_amount_mxn)"/></td>
-                                        </tr>
-                                        <tr style="border-bottom: 1px solid #ddd;">
-                                            <td style="padding: 8px 12px;">Total Pagado</td>
-                                            <td class="text-end" style="padding: 8px 12px; color: #28a745; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_paid_usd)"/></td>
-                                            <td class="text-end" style="padding: 8px 12px; color: #9fccab;">$<t t-esc="'{:,.2f}'.format(total_paid_mxn)"/></td>
-                                        </tr>
-                                        <tr style="background-color: #fff3cd; border-top: 3px solid #000;">
-                                            <td style="padding: 12px; font-weight: 900; font-size: 14px;">SALDO PENDIENTE</td>
-                                            <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 16px; color: #c00;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/> USD</td>
-                                            <td class="text-end" style="padding: 12px; font-weight: 700; font-size: 13px; color: #888;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/> MXN</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div style="font-size: 9px; color: #888; text-align: right; margin-top: 2px;">
-                                    * Equivalencia en MXN con TC Banorte $<t t-esc="'%.4f' % banorte_rate"/> MXN/USD
-                                </div>
-                            </t>
-
-                            <!-- === MXN ONLY === -->
-                            <t t-if="currency_scenario == 'mxn_only'">
-                                <table class="table" style="font-size: 12px; border-collapse: collapse; width: 100%; margin-bottom: 0;">
-                                    <thead>
-                                        <tr style="background-color: #000; color: #fff;">
-                                            <th style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff;">Concepto</th>
-                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 30%;">Pesos (MXN)</th>
-                                            <th class="text-end" style="padding: 10px 12px; font-weight: 700; font-size: 12px; color: #fff; width: 30%;">Equiv. Dólares (USD)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr style="border-bottom: 1px solid #ddd;">
-                                            <td style="padding: 8px 12px;">Total Facturado</td>
-                                            <td class="text-end" style="padding: 8px 12px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_amount_mxn)"/></td>
-                                            <td class="text-end" style="padding: 8px 12px; color: #888;">$<t t-esc="'{:,.2f}'.format(total_amount_usd)"/></td>
-                                        </tr>
-                                        <tr style="border-bottom: 1px solid #ddd;">
-                                            <td style="padding: 8px 12px;">Total Pagado</td>
-                                            <td class="text-end" style="padding: 8px 12px; color: #28a745; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_paid_mxn)"/></td>
-                                            <td class="text-end" style="padding: 8px 12px; color: #9fccab;">$<t t-esc="'{:,.2f}'.format(total_paid_usd)"/></td>
-                                        </tr>
-                                        <tr style="background-color: #fff3cd; border-top: 3px solid #000;">
-                                            <td style="padding: 12px; font-weight: 900; font-size: 14px;">SALDO PENDIENTE</td>
-                                            <td class="text-end" style="padding: 12px; font-weight: 900; font-size: 16px; color: #c00;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/> MXN</td>
-                                            <td class="text-end" style="padding: 12px; font-weight: 700; font-size: 13px; color: #888;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/> USD</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div t-if="banorte_rate > 0" style="font-size: 9px; color: #888; text-align: right; margin-top: 2px;">
-                                    * Equivalencia en USD con TC Banorte $<t t-esc="'%.4f' % banorte_rate"/> MXN/USD
-                                </div>
-                            </t>
                         </div>
 
                         <!-- ============================================================ -->
@@ -227,8 +204,78 @@
                                 <strong style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Desglose por Orden de Venta</strong>
                             </div>
 
-                            <!-- === MULTI CURRENCY === -->
-                            <t t-if="currency_scenario == 'multi_currency'">
+                            <!-- MXN -->
+                            <t t-if="report_currency == 'mxn'">
+                                <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background-color: #2f2f2f; color: #fff;">
+                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;"># Orden</th>
+                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;">Fecha</th>
+                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Total MXN</th>
+                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Pagado MXN</th>
+                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Saldo MXN</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="orders_data" t-as="od">
+                                            <tr style="border-bottom: 1px solid #ddd;">
+                                                <td style="padding: 5px 8px; font-weight: 700;"><t t-esc="od.get('order_name', '')"/></td>
+                                                <td style="padding: 5px 8px;"><t t-esc="od.get('order_date', '')"/></td>
+                                                <td class="text-end" style="padding: 5px 8px;">$<t t-esc="'{:,.2f}'.format(od.get('total_mxn', 0))"/></td>
+                                                <td class="text-end" style="padding: 5px 8px; color: #28a745;">
+                                                    <t t-set="paid_mxn" t-value="od.get('total_paid', 0) * banorte_rate if od.get('currency') == 'USD' and banorte_rate > 0 else od.get('total_paid', 0)"/>
+                                                    $<t t-esc="'{:,.2f}'.format(paid_mxn)"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 8px; font-weight: 700; color: #c00;">$<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background-color: #000; color: #fff;">
+                                            <td colspan="4" style="padding: 8px; font-weight: 900; color: #fff; font-size: 11px;">TOTALES</td>
+                                            <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </t>
+
+                            <!-- USD -->
+                            <t t-if="report_currency == 'usd'">
+                                <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background-color: #2f2f2f; color: #fff;">
+                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;"># Orden</th>
+                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;">Fecha</th>
+                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Total USD</th>
+                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Pagado USD</th>
+                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Saldo USD</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="orders_data" t-as="od">
+                                            <tr style="border-bottom: 1px solid #ddd;">
+                                                <td style="padding: 5px 8px; font-weight: 700;"><t t-esc="od.get('order_name', '')"/></td>
+                                                <td style="padding: 5px 8px;"><t t-esc="od.get('order_date', '')"/></td>
+                                                <td class="text-end" style="padding: 5px 8px;">$<t t-esc="'{:,.2f}'.format(od.get('total_usd', 0))"/></td>
+                                                <td class="text-end" style="padding: 5px 8px; color: #28a745;">
+                                                    <t t-set="paid_usd" t-value="od.get('total_paid', 0) / banorte_rate if od.get('currency') == 'MXN' and banorte_rate > 0 else od.get('total_paid', 0)"/>
+                                                    $<t t-esc="'{:,.2f}'.format(paid_usd)"/>
+                                                </td>
+                                                <td class="text-end" style="padding: 5px 8px; font-weight: 700; color: #c00;">$<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background-color: #000; color: #fff;">
+                                            <td colspan="4" style="padding: 8px; font-weight: 900; color: #fff; font-size: 11px;">TOTALES</td>
+                                            <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </t>
+
+                            <!-- BOTH -->
+                            <t t-if="report_currency == 'both'">
                                 <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
@@ -263,76 +310,6 @@
                                     </tfoot>
                                 </table>
                             </t>
-
-                            <!-- === USD ONLY === -->
-                            <t t-if="currency_scenario == 'usd_only'">
-                                <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;"># Orden</th>
-                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;">Fecha</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Total USD</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Pagado USD</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Saldo USD</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Equiv. MXN</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <t t-foreach="orders_data" t-as="od">
-                                            <tr style="border-bottom: 1px solid #ddd;">
-                                                <td style="padding: 5px 8px; font-weight: 700;"><t t-esc="od.get('order_name', '')"/></td>
-                                                <td style="padding: 5px 8px;"><t t-esc="od.get('order_date', '')"/></td>
-                                                <td class="text-end" style="padding: 5px 8px;">$<t t-esc="'{:,.2f}'.format(od.get('amount_total', 0))"/></td>
-                                                <td class="text-end" style="padding: 5px 8px; color: #28a745;">$<t t-esc="'{:,.2f}'.format(od.get('total_paid', 0))"/></td>
-                                                <td class="text-end" style="padding: 5px 8px; font-weight: 700; color: #c00;">$<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/></td>
-                                                <td class="text-end" style="padding: 5px 8px; color: #888;">$<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/></td>
-                                            </tr>
-                                        </t>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr style="background-color: #000; color: #fff;">
-                                            <td colspan="4" style="padding: 8px; font-weight: 900; color: #fff; font-size: 11px;">TOTALES</td>
-                                            <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/></td>
-                                            <td class="text-end" style="padding: 8px; font-weight: 700; color: #ccc; font-size: 11px;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </t>
-
-                            <!-- === MXN ONLY === -->
-                            <t t-if="currency_scenario == 'mxn_only'">
-                                <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;"># Orden</th>
-                                            <th style="padding: 6px 8px; color: #fff; font-weight: 700;">Fecha</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Total MXN</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Pagado MXN</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Saldo MXN</th>
-                                            <th class="text-end" style="padding: 6px 8px; color: #fff; font-weight: 700;">Equiv. USD</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <t t-foreach="orders_data" t-as="od">
-                                            <tr style="border-bottom: 1px solid #ddd;">
-                                                <td style="padding: 5px 8px; font-weight: 700;"><t t-esc="od.get('order_name', '')"/></td>
-                                                <td style="padding: 5px 8px;"><t t-esc="od.get('order_date', '')"/></td>
-                                                <td class="text-end" style="padding: 5px 8px;">$<t t-esc="'{:,.2f}'.format(od.get('amount_total', 0))"/></td>
-                                                <td class="text-end" style="padding: 5px 8px; color: #28a745;">$<t t-esc="'{:,.2f}'.format(od.get('total_paid', 0))"/></td>
-                                                <td class="text-end" style="padding: 5px 8px; font-weight: 700; color: #c00;">$<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/></td>
-                                                <td class="text-end" style="padding: 5px 8px; color: #888;">$<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/></td>
-                                            </tr>
-                                        </t>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr style="background-color: #000; color: #fff;">
-                                            <td colspan="4" style="padding: 8px; font-weight: 900; color: #fff; font-size: 11px;">TOTALES</td>
-                                            <td class="text-end" style="padding: 8px; font-weight: 900; color: #fff; font-size: 12px;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/></td>
-                                            <td class="text-end" style="padding: 8px; font-weight: 700; color: #ccc; font-size: 11px;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </t>
                         </div>
 
                         <!-- ============================================================ -->
@@ -341,48 +318,30 @@
                         <t t-foreach="orders_data" t-as="od">
                             <div style="page-break-before: always;"/>
 
-                            <!-- HEADER DE CADA ORDEN -->
                             <div style="border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
                                 <div class="row" style="align-items: center;">
                                     <div class="col-5">
-                                        <h3 style="font-weight: 900; margin: 0; font-size: 20px;">
-                                            DETALLE: <t t-esc="od.get('order_name', '')"/>
-                                        </h3>
+                                        <h3 style="font-weight: 900; margin: 0; font-size: 20px;">DETALLE: <t t-esc="od.get('order_name', '')"/></h3>
                                     </div>
                                     <div class="col-4 text-center">
                                         <div style="font-size: 10px; color: #555;">
-                                            Moneda: <strong style="font-size: 14px;"><t t-esc="od.get('currency', '')"/></strong>
+                                            Moneda original: <strong style="font-size: 14px;"><t t-esc="od.get('currency', '')"/></strong>
                                         </div>
                                     </div>
                                     <div class="col-3 text-end">
-                                        <div style="font-size: 10px; color: #555;">
-                                            Fecha: <strong><t t-esc="od.get('order_date', '')"/></strong>
-                                        </div>
+                                        <div style="font-size: 10px; color: #555;">Fecha: <strong><t t-esc="od.get('order_date', '')"/></strong></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Info del cliente para esta orden -->
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <div style="font-size: 10px; color: #888; text-transform: uppercase;">Cliente</div>
-                                    <div style="font-size: 14px; font-weight: 700;">
-                                        <t t-esc="partner_name"/>
-                                    </div>
+                                    <div style="font-size: 14px; font-weight: 700;"><t t-esc="partner_name"/></div>
                                 </div>
-                                <div class="col-3">
+                                <div class="col-6">
                                     <div style="font-size: 10px; color: #888; text-transform: uppercase;">Vendedor</div>
-                                    <div style="font-size: 11px;">
-                                        <t t-esc="od.get('seller_name', '')"/>
-                                    </div>
-                                </div>
-                                <div class="col-3 text-end">
-                                    <t t-if="banorte_rate > 0">
-                                        <div style="background: #f5f5f5; color: #555; padding: 6px 10px; border-radius: 4px; display: inline-block; border: 1px solid #ddd;">
-                                            <div style="font-size: 8px; text-transform: uppercase; color: #999; font-weight: 700;">TC Ref.</div>
-                                            <div style="font-size: 14px; font-weight: 700; color: #555;">$<t t-esc="'%.4f' % banorte_rate"/></div>
-                                        </div>
-                                    </t>
+                                    <div style="font-size: 11px;"><t t-esc="od.get('seller_name', '')"/></div>
                                 </div>
                             </div>
 
@@ -392,49 +351,65 @@
                                     <strong style="font-size: 10px; text-transform: uppercase;">Materiales</strong>
                                 </div>
 
+                                <!-- Determinar qué columnas de precio mostrar -->
+                                <t t-set="show_alt" t-value="report_currency == 'both'"/>
+                                <t t-set="display_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
+                                <t t-set="alt_currency" t-value="od.get('material_lines', [{}])[0].get('currency_alt', '') if report_currency == 'both' else ''"/>
+
                                 <table class="table table-sm" style="font-size: 9px; width: 100%; border-collapse: collapse;">
                                     <thead>
                                         <tr style="background-color: #000; color: #fff;">
                                             <th style="padding: 6px; color: #fff; font-weight: 700; width: 3%;">#</th>
-                                            <th style="padding: 6px; color: #fff; font-weight: 700; width: 22%;">Material</th>
+                                            <th style="padding: 6px; color: #fff; font-weight: 700; width: 25%;">Material</th>
                                             <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 8%;">Vendido</th>
                                             <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 8%;">Entregado</th>
                                             <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 8%;">Pendiente</th>
                                             <th class="text-center" style="padding: 6px; color: #fff; font-weight: 700; width: 6%;">% Entrega</th>
-                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 10%;">
-                                                P.U. <t t-esc="od.get('currency', '')"/>
-                                            </th>
-                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 10%;">
-                                                P.U. <t t-esc="od.get('material_lines', [{}])[0].get('currency_alt', '')"/>
-                                            </th>
                                             <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 12%;">
-                                                Total <t t-esc="od.get('currency', '')"/>
+                                                P.U. <t t-esc="display_currency"/>
                                             </th>
-                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 12%;">
-                                                Total <t t-esc="od.get('material_lines', [{}])[0].get('currency_alt', '')"/>
+                                            <t t-if="show_alt">
+                                                <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 12%;">
+                                                    P.U. <t t-esc="alt_currency"/>
+                                                </th>
+                                            </t>
+                                            <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 14%;">
+                                                Total <t t-esc="display_currency"/>
                                             </th>
+                                            <t t-if="show_alt">
+                                                <th class="text-end" style="padding: 6px; color: #fff; font-weight: 700; width: 14%;">
+                                                    Total <t t-esc="alt_currency"/>
+                                                </th>
+                                            </t>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-set="mat_seq" t-value="1"/>
                                         <t t-foreach="od.get('material_lines', [])" t-as="ml">
+                                            <!-- Calcular valores según report_currency -->
+                                            <t t-if="report_currency == 'mxn'">
+                                                <t t-set="pu_display" t-value="ml.get('price_unit', 0) if od.get('currency') == 'MXN' else ml.get('price_unit_alt', 0)"/>
+                                                <t t-set="total_display" t-value="ml.get('subtotal', 0) if od.get('currency') == 'MXN' else ml.get('subtotal_alt', 0)"/>
+                                            </t>
+                                            <t t-elif="report_currency == 'usd'">
+                                                <t t-set="pu_display" t-value="ml.get('price_unit', 0) if od.get('currency') == 'USD' else ml.get('price_unit_alt', 0)"/>
+                                                <t t-set="total_display" t-value="ml.get('subtotal', 0) if od.get('currency') == 'USD' else ml.get('subtotal_alt', 0)"/>
+                                            </t>
+                                            <t t-else="">
+                                                <t t-set="pu_display" t-value="ml.get('price_unit', 0)"/>
+                                                <t t-set="total_display" t-value="ml.get('subtotal', 0)"/>
+                                            </t>
                                             <tr style="border-bottom: 1px solid #ddd;">
                                                 <td style="padding: 5px 6px;" class="text-center">
                                                     <t t-esc="mat_seq"/>
                                                     <t t-set="mat_seq" t-value="mat_seq + 1"/>
                                                 </td>
-                                                <td style="padding: 5px 6px; font-weight: 600;">
-                                                    <t t-esc="ml.get('product_name', '')"/>
-                                                </td>
+                                                <td style="padding: 5px 6px; font-weight: 600;"><t t-esc="ml.get('product_name', '')"/></td>
                                                 <td class="text-end" style="padding: 5px 6px;">
                                                     <t t-esc="'%.2f' % ml.get('qty_ordered', 0)"/> <span style="font-size: 7px;"><t t-esc="ml.get('uom', 'm²')"/></span>
                                                 </td>
-                                                <td class="text-end" style="padding: 5px 6px; color: #28a745;">
-                                                    <t t-esc="'%.2f' % ml.get('qty_delivered', 0)"/>
-                                                </td>
-                                                <td class="text-end" style="padding: 5px 6px; color: #c00; font-weight: 700;">
-                                                    <t t-esc="'%.2f' % ml.get('qty_pending', 0)"/>
-                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px; color: #28a745;"><t t-esc="'%.2f' % ml.get('qty_delivered', 0)"/></td>
+                                                <td class="text-end" style="padding: 5px 6px; color: #c00; font-weight: 700;"><t t-esc="'%.2f' % ml.get('qty_pending', 0)"/></td>
                                                 <td class="text-center" style="padding: 5px 6px;">
                                                     <t t-set="pct" t-value="ml.get('pct_delivered', 0)"/>
                                                     <t t-set="pct_color" t-value="'#28a745' if pct &gt;= 100 else '#ffc107' if pct &gt;= 50 else '#dc3545'"/>
@@ -442,18 +417,14 @@
                                                         <t t-esc="'%.0f' % pct"/>%
                                                     </div>
                                                 </td>
-                                                <td class="text-end" style="padding: 5px 6px;">
-                                                    $<t t-esc="'{:,.2f}'.format(ml.get('price_unit', 0))"/>
-                                                </td>
-                                                <td class="text-end" style="padding: 5px 6px; color: #555;">
-                                                    $<t t-esc="'{:,.2f}'.format(ml.get('price_unit_alt', 0))"/>
-                                                </td>
-                                                <td class="text-end" style="padding: 5px 6px; font-weight: 700;">
-                                                    $<t t-esc="'{:,.2f}'.format(ml.get('subtotal', 0))"/>
-                                                </td>
-                                                <td class="text-end" style="padding: 5px 6px; color: #555;">
-                                                    $<t t-esc="'{:,.2f}'.format(ml.get('subtotal_alt', 0))"/>
-                                                </td>
+                                                <td class="text-end" style="padding: 5px 6px;">$<t t-esc="'{:,.2f}'.format(pu_display)"/></td>
+                                                <t t-if="show_alt">
+                                                    <td class="text-end" style="padding: 5px 6px; color: #555;">$<t t-esc="'{:,.2f}'.format(ml.get('price_unit_alt', 0))"/></td>
+                                                </t>
+                                                <td class="text-end" style="padding: 5px 6px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_display)"/></td>
+                                                <t t-if="show_alt">
+                                                    <td class="text-end" style="padding: 5px 6px; color: #555;">$<t t-esc="'{:,.2f}'.format(ml.get('subtotal_alt', 0))"/></td>
+                                                </t>
                                             </tr>
                                         </t>
                                     </tbody>
@@ -465,32 +436,35 @@
                                 <div style="background-color: #eee; padding: 3px 10px; margin-bottom: 2px; margin-top: 10px;">
                                     <strong style="font-size: 10px; text-transform: uppercase;">Servicios Adicionales</strong>
                                 </div>
+                                <t t-set="svc_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
                                 <table class="table table-sm" style="font-size: 9px; width: 100%; border-collapse: collapse;">
                                     <thead>
                                         <tr style="background-color: #2f2f2f; color: #fff;">
                                             <th style="padding: 5px; color: #fff; font-weight: 700;">Descripción</th>
                                             <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">Cantidad</th>
-                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">
-                                                P.U. <t t-esc="od.get('currency', '')"/>
-                                            </th>
-                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">
-                                                Total <t t-esc="od.get('currency', '')"/>
-                                            </th>
+                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">P.U. <t t-esc="svc_currency"/></th>
+                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">Total <t t-esc="svc_currency"/></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-foreach="od.get('service_lines', [])" t-as="sl">
+                                            <t t-if="report_currency == 'mxn'">
+                                                <t t-set="sl_pu" t-value="sl.get('price_unit', 0) if od.get('currency') == 'MXN' else sl.get('price_unit_alt', 0)"/>
+                                                <t t-set="sl_total" t-value="sl.get('subtotal', 0) if od.get('currency') == 'MXN' else sl.get('subtotal_alt', 0)"/>
+                                            </t>
+                                            <t t-elif="report_currency == 'usd'">
+                                                <t t-set="sl_pu" t-value="sl.get('price_unit', 0) if od.get('currency') == 'USD' else sl.get('price_unit_alt', 0)"/>
+                                                <t t-set="sl_total" t-value="sl.get('subtotal', 0) if od.get('currency') == 'USD' else sl.get('subtotal_alt', 0)"/>
+                                            </t>
+                                            <t t-else="">
+                                                <t t-set="sl_pu" t-value="sl.get('price_unit', 0)"/>
+                                                <t t-set="sl_total" t-value="sl.get('subtotal', 0)"/>
+                                            </t>
                                             <tr style="border-bottom: 1px solid #ddd;">
                                                 <td style="padding: 4px 5px;"><t t-esc="sl.get('product_name', '')"/></td>
-                                                <td class="text-end" style="padding: 4px 5px;">
-                                                    <t t-esc="'%.2f' % sl.get('qty_ordered', 0)"/>
-                                                </td>
-                                                <td class="text-end" style="padding: 4px 5px;">
-                                                    $<t t-esc="'{:,.2f}'.format(sl.get('price_unit', 0))"/>
-                                                </td>
-                                                <td class="text-end" style="padding: 4px 5px; font-weight: 700;">
-                                                    $<t t-esc="'{:,.2f}'.format(sl.get('subtotal', 0))"/>
-                                                </td>
+                                                <td class="text-end" style="padding: 4px 5px;"><t t-esc="'%.2f' % sl.get('qty_ordered', 0)"/></td>
+                                                <td class="text-end" style="padding: 4px 5px;">$<t t-esc="'{:,.2f}'.format(sl_pu)"/></td>
+                                                <td class="text-end" style="padding: 4px 5px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(sl_total)"/></td>
                                             </tr>
                                         </t>
                                     </tbody>
@@ -498,27 +472,37 @@
                             </t>
 
                             <!-- TOTALES DE LA ORDEN -->
+                            <t t-set="totals_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
+                            <t t-if="report_currency == 'mxn'">
+                                <t t-set="od_untaxed" t-value="od.get('amount_untaxed', 0) if od.get('currency') == 'MXN' else od.get('amount_untaxed', 0) * banorte_rate"/>
+                                <t t-set="od_tax" t-value="od.get('amount_tax', 0) if od.get('currency') == 'MXN' else od.get('amount_tax', 0) * banorte_rate"/>
+                                <t t-set="od_total" t-value="od.get('total_mxn', 0)"/>
+                            </t>
+                            <t t-elif="report_currency == 'usd'">
+                                <t t-set="od_untaxed" t-value="od.get('amount_untaxed', 0) if od.get('currency') == 'USD' else (od.get('amount_untaxed', 0) / banorte_rate if banorte_rate > 0 else 0)"/>
+                                <t t-set="od_tax" t-value="od.get('amount_tax', 0) if od.get('currency') == 'USD' else (od.get('amount_tax', 0) / banorte_rate if banorte_rate > 0 else 0)"/>
+                                <t t-set="od_total" t-value="od.get('total_usd', 0)"/>
+                            </t>
+                            <t t-else="">
+                                <t t-set="od_untaxed" t-value="od.get('amount_untaxed', 0)"/>
+                                <t t-set="od_tax" t-value="od.get('amount_tax', 0)"/>
+                                <t t-set="od_total" t-value="od.get('amount_total', 0)"/>
+                            </t>
                             <div class="row mt-2">
                                 <div class="col-6"></div>
                                 <div class="col-6">
                                     <table class="table table-sm" style="font-size: 10px; border-top: 2px solid #000; width: 100%;">
                                         <tr>
                                             <td class="text-end" style="padding: 4px 8px;"><strong>SUBTOTAL</strong></td>
-                                            <td class="text-end" style="padding: 4px 8px; width: 35%;">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_untaxed', 0))"/> <span style="font-size: 8px;"><t t-esc="od.get('currency', '')"/></span>
-                                            </td>
+                                            <td class="text-end" style="padding: 4px 8px; width: 35%;">$<t t-esc="'{:,.2f}'.format(od_untaxed)"/> <span style="font-size: 8px;"><t t-esc="totals_currency"/></span></td>
                                         </tr>
                                         <tr>
                                             <td class="text-end" style="padding: 4px 8px; color: #555;"><strong>IVA</strong></td>
-                                            <td class="text-end" style="padding: 4px 8px; color: #555;">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_tax', 0))"/>
-                                            </td>
+                                            <td class="text-end" style="padding: 4px 8px; color: #555;">$<t t-esc="'{:,.2f}'.format(od_tax)"/></td>
                                         </tr>
                                         <tr style="border-top: 1px solid #ccc;">
                                             <td class="text-end" style="padding: 6px 8px; font-weight: 900; font-size: 12px;">TOTAL</td>
-                                            <td class="text-end" style="padding: 6px 8px; font-weight: 900; font-size: 14px;">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('amount_total', 0))"/> <t t-esc="od.get('currency', '')"/>
-                                            </td>
+                                            <td class="text-end" style="padding: 6px 8px; font-weight: 900; font-size: 14px;">$<t t-esc="'{:,.2f}'.format(od_total)"/> <t t-esc="totals_currency"/></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -527,18 +511,17 @@
                             <!-- PAGOS RELACIONADOS -->
                             <div style="margin-top: 16px;">
                                 <div style="background-color: #d4edda; padding: 3px 10px; margin-bottom: 2px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase; color: #155724;">
-                                        Pagos Registrados
-                                    </strong>
+                                    <strong style="font-size: 10px; text-transform: uppercase; color: #155724;">Pagos Registrados</strong>
                                 </div>
-
                                 <t t-if="od.get('payments')">
                                     <table class="table table-sm" style="font-size: 10px; width: 100%; border-collapse: collapse;">
                                         <thead>
                                             <tr style="background-color: #28a745; color: #fff;">
                                                 <th style="padding: 5px 8px; color: #fff; font-weight: 700;">Folio de Pago</th>
                                                 <th style="padding: 5px 8px; color: #fff; font-weight: 700;">Fecha</th>
-                                                <th style="padding: 5px 8px; color: #fff; font-weight: 700;">Moneda</th>
+                                                <t t-if="report_currency == 'both'">
+                                                    <th style="padding: 5px 8px; color: #fff; font-weight: 700;">Moneda</th>
+                                                </t>
                                                 <th class="text-end" style="padding: 5px 8px; color: #fff; font-weight: 700;">Monto Pagado</th>
                                             </tr>
                                         </thead>
@@ -547,7 +530,9 @@
                                                 <tr style="border-bottom: 1px solid #ddd;">
                                                     <td style="padding: 4px 8px; font-weight: 600;"><t t-esc="pmt.get('name', '')"/></td>
                                                     <td style="padding: 4px 8px;"><t t-esc="pmt.get('date', '')"/></td>
-                                                    <td style="padding: 4px 8px;"><t t-esc="pmt.get('currency', '')"/></td>
+                                                    <t t-if="report_currency == 'both'">
+                                                        <td style="padding: 4px 8px;"><t t-esc="pmt.get('currency', '')"/></td>
+                                                    </t>
                                                     <td class="text-end" style="padding: 4px 8px; font-weight: 700; color: #28a745;">
                                                         $<t t-esc="'{:,.2f}'.format(pmt.get('amount', 0))"/>
                                                     </td>
@@ -555,10 +540,19 @@
                                             </t>
                                         </tbody>
                                         <tfoot>
+                                            <t t-if="report_currency == 'mxn'">
+                                                <t t-set="tp_display" t-value="od.get('total_paid', 0) * banorte_rate if od.get('currency') == 'USD' and banorte_rate > 0 else od.get('total_paid', 0)"/>
+                                            </t>
+                                            <t t-elif="report_currency == 'usd'">
+                                                <t t-set="tp_display" t-value="od.get('total_paid', 0) / banorte_rate if od.get('currency') == 'MXN' and banorte_rate > 0 else od.get('total_paid', 0)"/>
+                                            </t>
+                                            <t t-else="">
+                                                <t t-set="tp_display" t-value="od.get('total_paid', 0)"/>
+                                            </t>
                                             <tr style="background-color: #f0f0f0; border-top: 2px solid #28a745;">
-                                                <td colspan="3" style="padding: 6px 8px; font-weight: 900;">TOTAL PAGADO</td>
+                                                <td t-att-colspan="3 if report_currency == 'both' else 2" style="padding: 6px 8px; font-weight: 900;">TOTAL PAGADO</td>
                                                 <td class="text-end" style="padding: 6px 8px; font-weight: 900; color: #28a745; font-size: 12px;">
-                                                    $<t t-esc="'{:,.2f}'.format(od.get('total_paid', 0))"/> <t t-esc="od.get('currency', '')"/>
+                                                    $<t t-esc="'{:,.2f}'.format(tp_display)"/> <t t-esc="totals_currency"/>
                                                 </td>
                                             </tr>
                                         </tfoot>
@@ -572,7 +566,7 @@
                             </div>
 
                             <!-- SALDO PENDIENTE DE ESTA ORDEN -->
-                            <t t-set="has_balance" t-value="od.get('balance_usd', 0) &gt; 0.01 or od.get('balance_mxn', 0) &gt; 0.01"/>
+                            <t t-set="has_balance" t-value="od.get('balance', 0) &gt; 0.01"/>
                             <div t-attf-style="margin-top: 16px; border: 3px solid {{ '#c00' if has_balance else '#999' }}; border-radius: 6px; overflow: hidden;">
                                 <div t-attf-style="background-color: {{ '#c00' if has_balance else '#999' }}; color: #fff; padding: 6px 12px;">
                                     <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
@@ -580,8 +574,21 @@
                                     </strong>
                                 </div>
 
-                                <!-- Multi currency: ambas monedas con igual peso -->
-                                <t t-if="currency_scenario == 'multi_currency'">
+                                <t t-if="report_currency == 'mxn'">
+                                    <div t-attf-style="padding: 16px; text-align: center; background: {{ '#fff5f5' if has_balance else '#f5f5f5' }};">
+                                        <div t-attf-style="font-size: 28px; font-weight: 900; color: {{ '#c00' if has_balance else '#999' }};">
+                                            $<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/> MXN
+                                        </div>
+                                    </div>
+                                </t>
+                                <t t-elif="report_currency == 'usd'">
+                                    <div t-attf-style="padding: 16px; text-align: center; background: {{ '#fff5f5' if has_balance else '#f5f5f5' }};">
+                                        <div t-attf-style="font-size: 28px; font-weight: 900; color: {{ '#c00' if has_balance else '#999' }};">
+                                            $<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/> USD
+                                        </div>
+                                    </div>
+                                </t>
+                                <t t-else="">
                                     <div class="row" t-attf-style="padding: 12px 16px; background: {{ '#fff5f5' if has_balance else '#f5f5f5' }};">
                                         <div class="col-6 text-center">
                                             <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Dólares</div>
@@ -593,42 +600,6 @@
                                             <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Pesos</div>
                                             <div t-attf-style="font-size: 22px; font-weight: 900; color: {{ '#c00' if has_balance else '#999' }};">
                                                 $<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/> MXN
-                                            </div>
-                                        </div>
-                                    </div>
-                                </t>
-
-                                <!-- USD only: USD principal, MXN secundario -->
-                                <t t-if="currency_scenario == 'usd_only'">
-                                    <div class="row" t-attf-style="padding: 12px 16px; background: {{ '#fff5f5' if has_balance else '#f5f5f5' }};">
-                                        <div class="col-7 text-center">
-                                            <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Dólares</div>
-                                            <div t-attf-style="font-size: 24px; font-weight: 900; color: {{ '#c00' if has_balance else '#999' }};">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/> USD
-                                            </div>
-                                        </div>
-                                        <div class="col-5 text-center" style="border-left: 1px solid #eee;">
-                                            <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Equiv. Pesos</div>
-                                            <div t-attf-style="font-size: 16px; font-weight: 700; color: {{ '#888' if has_balance else '#bbb' }};">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/> MXN
-                                            </div>
-                                        </div>
-                                    </div>
-                                </t>
-
-                                <!-- MXN only: MXN principal, USD secundario -->
-                                <t t-if="currency_scenario == 'mxn_only'">
-                                    <div class="row" t-attf-style="padding: 12px 16px; background: {{ '#fff5f5' if has_balance else '#f5f5f5' }};">
-                                        <div class="col-7 text-center">
-                                            <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Pesos</div>
-                                            <div t-attf-style="font-size: 24px; font-weight: 900; color: {{ '#c00' if has_balance else '#999' }};">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('balance_mxn', 0))"/> MXN
-                                            </div>
-                                        </div>
-                                        <div class="col-5 text-center" style="border-left: 1px solid #eee;">
-                                            <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Equiv. Dólares</div>
-                                            <div t-attf-style="font-size: 16px; font-weight: 700; color: {{ '#888' if has_balance else '#bbb' }};">
-                                                $<t t-esc="'{:,.2f}'.format(od.get('balance_usd', 0))"/> USD
                                             </div>
                                         </div>
                                     </div>
@@ -638,85 +609,59 @@
                         </t>
                         <!-- FIN DEL LOOP DE ÓRDENES -->
 
-                        <!-- DISCLAIMER FINAL -->
                         <div style="page-break-before: always;"/>
 
-                        <!-- Resumen Final Consolidado -->
+                        <!-- ============================================================ -->
+                        <!-- RESUMEN FINAL CONSOLIDADO                                    -->
+                        <!-- ============================================================ -->
                         <div style="border: 3px solid #000; border-radius: 8px; overflow: hidden; margin-bottom: 30px;">
                             <div style="background-color: #000; color: #fff; padding: 12px 16px;">
-                                <h4 style="margin: 0; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #fff;">
-                                    Resumen Final — Estado de Cuenta
-                                </h4>
-                                <div style="font-size: 11px; color: #ccc; font-weight: 600;">
-                                    <t t-esc="partner_name"/> | <t t-esc="statement_date"/>
-                                </div>
+                                <h4 style="margin: 0; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #fff;">Resumen Final — Estado de Cuenta</h4>
+                                <div style="font-size: 11px; color: #ccc; font-weight: 600;"><t t-esc="partner_name"/> | <t t-esc="statement_date"/></div>
                             </div>
 
-                            <!-- Multi currency -->
-                            <t t-if="currency_scenario == 'multi_currency'">
+                            <t t-if="report_currency == 'mxn'">
+                                <div style="padding: 24px; text-align: center;">
+                                    <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total Pendiente</div>
+                                    <div style="font-size: 40px; font-weight: 900; color: #c00; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/> MXN</div>
+                                    <div style="font-size: 11px; color: #555;">Pesos Mexicanos</div>
+                                </div>
+                            </t>
+                            <t t-elif="report_currency == 'usd'">
+                                <div style="padding: 24px; text-align: center;">
+                                    <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total Pendiente</div>
+                                    <div style="font-size: 40px; font-weight: 900; color: #c00; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/> USD</div>
+                                    <div style="font-size: 11px; color: #555;">Dólares Americanos</div>
+                                </div>
+                            </t>
+                            <t t-else="">
                                 <div class="row" style="padding: 20px;">
                                     <div class="col-6 text-center" style="border-right: 2px solid #eee;">
-                                        <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total Pendiente USD</div>
+                                        <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total USD</div>
                                         <div style="font-size: 32px; font-weight: 900; color: #c00; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/></div>
                                         <div style="font-size: 11px; color: #555;">Dólares Americanos</div>
                                     </div>
                                     <div class="col-6 text-center">
-                                        <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total Pendiente MXN</div>
+                                        <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total MXN</div>
                                         <div style="font-size: 32px; font-weight: 900; color: #c00; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/></div>
                                         <div style="font-size: 11px; color: #555;">Pesos Mexicanos</div>
                                     </div>
                                 </div>
                             </t>
 
-                            <!-- USD only -->
-                            <t t-if="currency_scenario == 'usd_only'">
-                                <div class="row" style="padding: 20px;">
-                                    <div class="col-7 text-center" style="border-right: 2px solid #eee;">
-                                        <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total Pendiente</div>
-                                        <div style="font-size: 36px; font-weight: 900; color: #c00; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/> USD</div>
-                                    </div>
-                                    <div class="col-5 text-center" style="display: flex; align-items: center; justify-content: center;">
-                                        <div>
-                                            <div style="font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: 700;">Equivalente en Pesos</div>
-                                            <div style="font-size: 22px; font-weight: 700; color: #888; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/> MXN</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </t>
-
-                            <!-- MXN only -->
-                            <t t-if="currency_scenario == 'mxn_only'">
-                                <div class="row" style="padding: 20px;">
-                                    <div class="col-7 text-center" style="border-right: 2px solid #eee;">
-                                        <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo Total Pendiente</div>
-                                        <div style="font-size: 36px; font-weight: 900; color: #c00; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_mxn)"/> MXN</div>
-                                    </div>
-                                    <div class="col-5 text-center" style="display: flex; align-items: center; justify-content: center;">
-                                        <div>
-                                            <div style="font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: 700;">Equivalente en Dólares</div>
-                                            <div style="font-size: 22px; font-weight: 700; color: #888; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(total_balance_usd)"/> USD</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </t>
-
                             <div style="background-color: #f8f9fa; padding: 8px 16px; border-top: 1px solid #eee;">
                                 <div class="row">
-                                    <div class="col-3 text-center">
-                                        <span style="font-size: 10px; color: #888;">Órdenes USD:</span><br/>
-                                        <strong><t t-esc="orders_usd_count"/></strong>
+                                    <div class="col-4 text-center">
+                                        <span style="font-size: 10px; color: #888;">Órdenes Incluidas:</span><br/>
+                                        <strong><t t-esc="total_orders"/></strong>
                                     </div>
-                                    <div class="col-3 text-center">
-                                        <span style="font-size: 10px; color: #888;">Órdenes MXN:</span><br/>
-                                        <strong><t t-esc="orders_mxn_count"/></strong>
-                                    </div>
-                                    <div class="col-3 text-center">
-                                        <t t-if="banorte_rate > 0">
+                                    <div class="col-4 text-center">
+                                        <t t-if="report_currency == 'both' and banorte_rate > 0">
                                             <span style="font-size: 10px; color: #888;">TC Banorte Ref.:</span><br/>
-                                            <strong>$<t t-esc="'%.4f' % banorte_rate"/></strong>
+                                            <strong>$<t t-esc="'%.4f' % banorte_rate"/> MXN/USD</strong>
                                         </t>
                                     </div>
-                                    <div class="col-3 text-center">
+                                    <div class="col-4 text-center">
                                         <span style="font-size: 10px; color: #888;">Fecha del Estado:</span><br/>
                                         <strong><t t-esc="statement_date"/></strong>
                                     </div>
@@ -726,32 +671,15 @@
 
                         <!-- DISCLAIMER -->
                         <div style="border: 1px solid #ccc; padding: 12px 16px; background-color: #fafafa; margin-top: 20px;">
-                            <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 4px; text-transform: uppercase;">
-                                Aviso Importante — Términos y Condiciones
-                            </strong>
+                            <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 4px; text-transform: uppercase;">Aviso Importante — Términos y Condiciones</strong>
                             <div style="font-size: 9px; text-align: justify; color: #333; line-height: 1.4;">
-                                <p style="margin-bottom: 4px;">
-                                    <strong>1. VALIDEZ:</strong> Este estado de cuenta refleja los saldos al momento de su emisión.
-                                    Los montos pueden variar si existen pagos o ajustes posteriores a la fecha de generación del documento.
-                                </p>
-                                <p style="margin-bottom: 4px;">
-                                    <strong>2. TIPO DE CAMBIO:</strong> Las conversiones entre USD y MXN se realizan utilizando el tipo de cambio
-                                    de venta publicado por Banorte vigente al día de emisión de este documento. Este tipo de cambio es referencial
-                                    y puede diferir del aplicado en transacciones bancarias individuales.
-                                </p>
-                                <p style="margin-bottom: 4px;">
-                                    <strong>3. PAGOS:</strong> Los pagos reflejados son aquellos que han sido registrados y conciliados en nuestro sistema
-                                    al momento de la generación de este documento. Pagos en tránsito o no conciliados podrían no aparecer reflejados.
-                                </p>
-                                <p style="margin-bottom: 4px;">
-                                    <strong>4. ENTREGAS:</strong> Las cantidades entregadas corresponden a los registros de salida de almacén validados.
-                                    Entregas parciales en proceso podrían no estar reflejadas en su totalidad.
-                                </p>
-                                <p style="margin-bottom: 0;">
-                                    <strong>5. DISCREPANCIAS:</strong> En caso de encontrar alguna discrepancia en este estado de cuenta,
-                                    favor de comunicarse con su ejecutivo de ventas asignado en un plazo no mayor a 5 días hábiles
-                                    a partir de la recepción de este documento.
-                                </p>
+                                <p style="margin-bottom: 4px;"><strong>1. VALIDEZ:</strong> Este estado de cuenta refleja los saldos al momento de su emisión. Los montos pueden variar si existen pagos o ajustes posteriores a la fecha de generación del documento.</p>
+                                <t t-if="report_currency == 'both'">
+                                    <p style="margin-bottom: 4px;"><strong>2. TIPO DE CAMBIO:</strong> Las conversiones entre USD y MXN se realizan utilizando el tipo de cambio de venta publicado por Banorte vigente al día de emisión de este documento. Este tipo de cambio es referencial y puede diferir del aplicado en transacciones bancarias individuales.</p>
+                                </t>
+                                <p style="margin-bottom: 4px;"><strong><t t-if="report_currency == 'both'">3</t><t t-else="">2</t>. PAGOS:</strong> Los pagos reflejados son aquellos que han sido registrados y conciliados en nuestro sistema al momento de la generación de este documento. Pagos en tránsito o no conciliados podrían no aparecer reflejados.</p>
+                                <p style="margin-bottom: 4px;"><strong><t t-if="report_currency == 'both'">4</t><t t-else="">3</t>. ENTREGAS:</strong> Las cantidades entregadas corresponden a los registros de salida de almacén validados. Entregas parciales en proceso podrían no estar reflejadas en su totalidad.</p>
+                                <p style="margin-bottom: 0;"><strong><t t-if="report_currency == 'both'">5</t><t t-else="">4</t>. DISCREPANCIAS:</strong> En caso de encontrar alguna discrepancia en este estado de cuenta, favor de comunicarse con su ejecutivo de ventas asignado en un plazo no mayor a 5 días hábiles a partir de la recepción de este documento.</p>
                             </div>
                         </div>
 

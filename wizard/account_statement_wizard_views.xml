@@ -68,9 +68,46 @@
                         </div>
                     </div>
 
-                    <!-- Sección: Opciones y Tipo de Cambio -->
+                    <!-- Sección: Divisa del Reporte + Opciones de Filtrado -->
                     <div class="row mx-0 mb-3">
                         <div class="col-md-6 pe-md-2">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-light py-2">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-money me-2 text-primary"/>Divisa del Reporte
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Campos ocultos para detección -->
+                                    <field name="has_usd_orders" invisible="1"/>
+                                    <field name="has_mxn_orders" invisible="1"/>
+                                    <group>
+                                        <field name="report_currency" widget="radio"/>
+                                    </group>
+                                    <!-- Indicador de monedas detectadas -->
+                                    <div class="alert alert-light border mt-2 mb-0 py-2" role="alert"
+                                         invisible="not partner_id">
+                                        <small>
+                                            <i class="fa fa-info-circle me-1 text-info"/>
+                                            Órdenes detectadas:
+                                            <strong>
+                                                <field name="detected_usd_count" class="d-inline"/> en USD,
+                                                <field name="detected_mxn_count" class="d-inline"/> en MXN
+                                            </strong>
+                                        </small>
+                                    </div>
+                                    <!-- TC solo visible cuando report_currency es 'both' o 'usd' con órdenes MXN o viceversa -->
+                                    <div class="alert alert-info border-0 mt-2 mb-0 py-2" role="alert"
+                                         invisible="report_currency == 'mxn' and not has_usd_orders or report_currency == 'usd' and not has_mxn_orders">
+                                        <small>
+                                            <i class="fa fa-exchange me-1"/>
+                                            TC Banorte: <strong><field name="exchange_rate" class="d-inline" widget="float" digits="[12,4]"/></strong> MXN/USD
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 ps-md-2">
                             <div class="card shadow-sm h-100">
                                 <div class="card-header bg-light py-2">
                                     <h5 class="mb-0">
@@ -82,27 +119,6 @@
                                         <field name="include_draft" widget="boolean_toggle"/>
                                         <field name="include_fully_paid" widget="boolean_toggle"/>
                                     </group>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 ps-md-2">
-                            <div class="card shadow-sm h-100">
-                                <div class="card-header bg-light py-2">
-                                    <h5 class="mb-0">
-                                        <i class="fa fa-money me-2 text-primary"/>Tipo de Cambio
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <group>
-                                        <field name="exchange_rate" widget="monetary_field"/>
-                                    </group>
-                                    <div class="alert alert-info border-0 mt-2 mb-0 py-2" role="alert">
-                                        <small>
-                                            <i class="fa fa-info-circle me-1"/>
-                                            Tipo de cambio Banorte para conversiones
-                                            <strong>USD ↔ MXN</strong>.
-                                        </small>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -136,8 +152,7 @@
                                     <div class="alert alert-light border mt-2 mb-0 py-2" role="alert">
                                         <small>
                                             <i class="fa fa-info-circle me-1 text-info"/>
-                                            Si no selecciona órdenes, se incluirán automáticamente todas las órdenes abiertas según los filtros configurados.
-                                            Solo se muestran órdenes con saldo pendiente (pagos incompletos).
+                                            Si no selecciona órdenes, se incluirán automáticamente todas las órdenes abiertas según los filtros.
                                         </small>
                                     </div>
                                 </div>
