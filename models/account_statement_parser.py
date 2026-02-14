@@ -42,9 +42,14 @@ class AccountStatementReportParser(models.AbstractModel):
             'total_paid_usd': report_data.get('total_paid_usd', 0),
             'total_paid_mxn': report_data.get('total_paid_mxn', 0),
             'total_orders': report_data.get('total_orders', 0),
+            # Nuevas variables
+            'orders_usd_count': report_data.get('orders_usd_count', 0),
+            'orders_mxn_count': report_data.get('orders_mxn_count', 0),
+            'currency_scenario': report_data.get('currency_scenario', 'multi_currency'),
         }
         _logger.info(
-            "PARSER RETURNING: orders_data len=%s, partner=%s, raw_data_keys=%s",
-            len(values['orders_data']), values['partner_name'], list(report_data.keys())
+            "PARSER RETURNING: orders_data len=%s, partner=%s, scenario=%s, usd=%s, mxn=%s",
+            len(values['orders_data']), values['partner_name'],
+            values['currency_scenario'], values['orders_usd_count'], values['orders_mxn_count'],
         )
         return values

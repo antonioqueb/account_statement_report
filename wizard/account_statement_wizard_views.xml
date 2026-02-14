@@ -107,6 +107,43 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Sección: Selección Manual de Órdenes -->
+                    <div class="row mx-0 mb-3">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-light py-2">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h5 class="mb-0">
+                                            <i class="fa fa-list-ol me-2 text-primary"/>Selección de Órdenes
+                                            <small class="text-muted ms-2">(Opcional — solo órdenes con saldo pendiente)</small>
+                                        </h5>
+                                        <button name="action_select_all_open"
+                                                type="object"
+                                                class="btn btn-sm btn-outline-primary"
+                                                icon="fa-check-square-o"
+                                                string="Seleccionar Todas las Abiertas"
+                                                invisible="not partner_id"/>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <field name="available_order_ids" invisible="1"/>
+                                    <field name="order_ids"
+                                           widget="many2many_tags"
+                                           domain="[('id', 'in', available_order_ids)]"
+                                           options="{'no_create': True}"
+                                           placeholder="Seleccione órdenes específicas o deje vacío para incluir todas..."/>
+                                    <div class="alert alert-light border mt-2 mb-0 py-2" role="alert">
+                                        <small>
+                                            <i class="fa fa-info-circle me-1 text-info"/>
+                                            Si no selecciona órdenes, se incluirán automáticamente todas las órdenes abiertas según los filtros configurados.
+                                            Solo se muestran órdenes con saldo pendiente (pagos incompletos).
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Footer con botones -->
