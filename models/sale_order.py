@@ -141,3 +141,46 @@ class SaleOrder(models.Model):
             'total_usd': total_usd,
             'total_mxn': total_mxn,
         }
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    fulfillment_percent = fields.Float(
+        string='% Cumplimiento',
+        compute='_compute_line_metrics',
+        store=True,
+    )
+    returned_qty_m2 = fields.Float(
+        string='Devuelto',
+        compute='_compute_line_metrics',
+        store=True,
+    )
+    returned_amount = fields.Monetary(
+        string='Monto Devuelto',
+        compute='_compute_line_metrics',
+        store=True,
+        currency_field='currency_id',
+    )
+
+    @api.depends('qty_delivered', 'product_uom_qty', 'move_ids', 'move_ids.state', 'price_unit')
+    def _compute_line_metrics(self):
+        for line in self:
+            # Fulfillment
+            if line.product_uom_qty > 0:
+                line.fulfillment_percent = line.qty_delivered / line.product_uom_qty
+            else:
+                line.fulfillment_percent = 0.0
+
+            # Returns
+            returned_qty = 0.0
+            out_moves = line.move_ids.filtered(
+                lambda m: m.state == 'done' and m.picking_code == 'outgoing'
+            )
+            if out_moves:
+                returns = self.env['stock.move'].search([
+                    ('origin_returned_move_id', 'in', out_moves.ids),
+                    ('state', '=', 'done'),
+                ])
+                returned_qty = sum(returns.mapped('product_uom_qty'))
+
+            line.returned_qty_m2 = returned_qty
+            line.returned_amount = returned_qty * line.price_unit
