@@ -58,7 +58,7 @@
                                             <th style="padding: 5px 4px; color: #fff; font-weight: 700; width: 3%;">#</th>
                                             <th style="padding: 5px 4px; color: #fff; font-weight: 700; width: 22%;">Material</th>
                                             <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 8%;">Vendido</th>
-                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 8%;">Entregado Neto</th>
+                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 8%;">Entregado</th>
                                             <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 7%;">Devuelto</th>
                                             <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 8%;">Pendiente</th>
                                             <th class="text-center" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 6%;">% Neto</th>
