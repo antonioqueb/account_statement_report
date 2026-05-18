@@ -23,6 +23,26 @@ class SaleOrder(models.Model):
                 payments |= partial
         return payments
 
+    def action_print_account_statement(self):
+        """Genera el estado de cuenta solo para esta orden de venta."""
+        self.ensure_one()
+        currency_name = (self.currency_id.name or '').upper()
+        if currency_name == 'USD':
+            report_currency = 'usd'
+        elif currency_name == 'MXN':
+            report_currency = 'mxn'
+        else:
+            report_currency = 'mxn'
+
+        wizard = self.env['account.statement.wizard'].create({
+            'partner_id': self.partner_id.id,
+            'order_ids': [(6, 0, [self.id])],
+            'report_currency': report_currency,
+            'include_fully_paid': True,
+            'include_draft': self.state in ('draft', 'sent'),
+        })
+        return wizard.action_print_statement()
+
     def _get_statement_data(self, banorte_rate=0.0):
         """
         Retorna datos consolidados para el estado de cuenta.

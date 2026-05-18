@@ -12,7 +12,9 @@
         'report/account_statement_report.xml',
         'report/account_statement_templates.xml',
         'views/menu_views.xml',
-    ],
+        'views/sale_order_views.xml',
+
+            ],
     'installable': True,
     'application': False,
     'auto_install': False,
