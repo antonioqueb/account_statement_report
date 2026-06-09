@@ -29,10 +29,18 @@ class SaleOrder(models.Model):
     def _compute_customer_credit_balance(self):
         for order in self:
             partner = order.partner_id.commercial_partner_id or order.partner_id
-            # partner.credit es el balance por cobrar (lo que el cliente debe).
-            # Si es negativo, el cliente tiene un saldo a favor.
-            credit = partner.credit if partner else 0.0
-            balance = -credit if credit < -0.01 else 0.0
+            balance = 0.0
+            if partner:
+                # partner.credit es el balance por cobrar (lo que el cliente debe).
+                # Si es negativo, el cliente tiene un saldo a favor.
+                # Se lee con sudo() porque 'credit' está restringido a grupos de
+                # contabilidad y el vendedor que abre la orden no los tiene.
+                try:
+                    credit = partner.sudo().credit or 0.0
+                except Exception:
+                    credit = 0.0
+                if credit < -0.01:
+                    balance = -credit
             order.x_customer_credit_balance = balance
             order.x_has_customer_credit = balance > 0.01
 
