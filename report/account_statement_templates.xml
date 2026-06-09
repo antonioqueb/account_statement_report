@@ -440,6 +440,50 @@
                             </div>
                         </div>
 
+                        <!-- ============================================================ -->
+                        <!-- SALDO A FAVOR GLOBAL DEL CLIENTE                             -->
+                        <!-- Se muestra en TODOS los reportes mientras exista, aunque las -->
+                        <!-- órdenes incluidas no tengan excedente.                       -->
+                        <!-- ============================================================ -->
+                        <t t-if="has_customer_credit">
+                            <div style="border: 3px solid #28a745; border-radius: 8px; overflow: hidden; margin-bottom: 30px;">
+                                <div style="background-color: #28a745; color: #fff; padding: 10px 16px;">
+                                    <strong style="font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #fff; font-size: 13px;">
+                                        Saldo a Favor del Cliente
+                                    </strong>
+                                    <div style="font-size: 10px; color: #d6f5e0; font-weight: 600;">
+                                        Considerando todas las órdenes del cliente
+                                    </div>
+                                </div>
+                                <t t-if="report_currency == 'usd'">
+                                    <div style="padding: 18px; text-align: center; background: #f0fdf4;">
+                                        <div style="font-size: 34px; font-weight: 900; color: #28a745;">$<t t-esc="'{:,.2f}'.format(customer_credit_usd)"/> USD</div>
+                                        <div style="font-size: 11px; color: #555;">A favor del cliente</div>
+                                    </div>
+                                </t>
+                                <t t-elif="report_currency == 'mxn'">
+                                    <div style="padding: 18px; text-align: center; background: #f0fdf4;">
+                                        <div style="font-size: 34px; font-weight: 900; color: #28a745;">$<t t-esc="'{:,.2f}'.format(customer_credit_mxn)"/> MXN</div>
+                                        <div style="font-size: 11px; color: #555;">A favor del cliente</div>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="row" style="padding: 16px;">
+                                        <div class="col-6 text-center" style="border-right: 2px solid #d6f5e0;">
+                                            <div style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo a Favor USD</div>
+                                            <div style="font-size: 28px; font-weight: 900; color: #28a745; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(customer_credit_usd)"/></div>
+                                            <div style="font-size: 11px; color: #555;">Dólares Americanos</div>
+                                        </div>
+                                        <div class="col-6 text-center">
+                                            <div style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: 700;">Saldo a Favor MXN</div>
+                                            <div style="font-size: 28px; font-weight: 900; color: #28a745; margin-top: 4px;">$<t t-esc="'{:,.2f}'.format(customer_credit_mxn)"/></div>
+                                            <div style="font-size: 11px; color: #555;">Pesos Mexicanos</div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+
                         <!-- DISCLAIMER -->
                         <div style="border: 1px solid #ccc; padding: 12px 16px; background-color: #fafafa; margin-top: 20px;">
                             <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 4px; text-transform: uppercase;">Aviso Importante — Términos y Condiciones</strong>

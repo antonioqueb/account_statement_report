@@ -230,6 +230,24 @@ class AccountStatementWizard(models.TransientModel):
         if not orders_data:
             raise UserError("Todas las órdenes encontradas están pagadas al 100%. Active 'Incluir Pagadas al 100%' para verlas.")
 
+        # Saldo a favor GLOBAL del cliente (todas sus órdenes confirmadas), para
+        # mostrarlo en TODOS los reportes aunque la(s) orden(es) incluida(s) no
+        # tengan excedente. Usa la misma lógica de balance que el reporte.
+        partner = self.partner_id.commercial_partner_id or self.partner_id
+        all_client_orders = self.env['sale.order'].sudo().search([
+            ('partner_id.commercial_partner_id', '=', partner.id),
+            ('state', 'in', ['sale', 'done']),
+        ])
+        global_balance_mxn = 0.0
+        for o in all_client_orders:
+            try:
+                global_balance_mxn += o._statement_balance_mxn(banorte_rate)
+            except Exception:
+                continue
+        customer_credit_mxn = -global_balance_mxn if global_balance_mxn < -0.01 else 0.0
+        customer_credit_usd = (customer_credit_mxn / banorte_rate) if (customer_credit_mxn and banorte_rate > 0) else 0.0
+        has_customer_credit = customer_credit_mxn > 0.01
+
         data = {
             'wizard_id': self.id,
             'partner_id': self.partner_id.id,
@@ -251,6 +269,9 @@ class AccountStatementWizard(models.TransientModel):
             'orders_usd_count': orders_usd_count,
             'orders_mxn_count': orders_mxn_count,
             'report_currency': report_currency,
+            'customer_credit_mxn': customer_credit_mxn,
+            'customer_credit_usd': customer_credit_usd,
+            'has_customer_credit': has_customer_credit,
         }
 
         return self.env.ref('account_statement_report.action_report_account_statement').report_action(self, data=data)
