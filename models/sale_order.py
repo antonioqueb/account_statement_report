@@ -8,6 +8,34 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    x_company_currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda de la Compañía',
+        related='company_id.currency_id',
+        readonly=True,
+    )
+    x_customer_credit_balance = fields.Monetary(
+        string='Saldo a Favor del Cliente',
+        compute='_compute_customer_credit_balance',
+        currency_field='x_company_currency_id',
+        help='Saldo a favor del cliente (cuando ha pagado de más). '
+             'Se calcula a partir del balance por cobrar del cliente.',
+    )
+    x_has_customer_credit = fields.Boolean(
+        compute='_compute_customer_credit_balance',
+    )
+
+    @api.depends('partner_id')
+    def _compute_customer_credit_balance(self):
+        for order in self:
+            partner = order.partner_id.commercial_partner_id or order.partner_id
+            # partner.credit es el balance por cobrar (lo que el cliente debe).
+            # Si es negativo, el cliente tiene un saldo a favor.
+            credit = partner.credit if partner else 0.0
+            balance = -credit if credit < -0.01 else 0.0
+            order.x_customer_credit_balance = balance
+            order.x_has_customer_credit = balance > 0.01
+
     def _get_related_invoices(self):
         """Retorna las facturas relacionadas a esta orden de venta."""
         self.ensure_one()
