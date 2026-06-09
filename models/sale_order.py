@@ -25,22 +25,67 @@ class SaleOrder(models.Model):
         compute='_compute_customer_credit_balance',
     )
 
-    @api.depends('partner_id')
+    def _statement_pending_in_company_currency(self):
+        """Pendiente por pagar de ESTA orden, en moneda de la compañía.
+
+        Replica la lógica de los módulos de métricas/KPI:
+        pendiente = total de la orden - pagos conciliados.
+        Si es negativo, la orden tiene un saldo a favor (sobrepago).
+        """
+        self.ensure_one()
+        order = self
+        company = order.company_id or self.env.company
+        company_currency = company.currency_id
+        convert_date = (order.date_order and order.date_order.date()) or fields.Date.today()
+
+        def to_company(amount, from_currency, date=None):
+            if not from_currency or from_currency == company_currency:
+                return amount
+            return from_currency._convert(
+                amount, company_currency, company, date or fields.Date.today()
+            )
+
+        amount_total = to_company(order.amount_total, order.currency_id, convert_date)
+
+        invoices = order.invoice_ids.filtered(
+            lambda inv: inv.state == 'posted' and inv.move_type == 'out_invoice'
+        )
+        total_paid = 0.0
+        for invoice in invoices:
+            for partial in invoice.sudo().line_ids.mapped('matched_credit_ids'):
+                pay = partial.credit_move_id.payment_id
+                if pay:
+                    # partial.amount ya está en moneda de la compañía.
+                    total_paid += partial.amount
+
+        return amount_total - total_paid
+
+    @api.depends(
+        'partner_id', 'amount_total',
+        'invoice_ids', 'invoice_ids.state',
+        'invoice_ids.amount_residual',
+        'invoice_ids.payment_state',
+        'invoice_ids.line_ids.matched_credit_ids',
+    )
     def _compute_customer_credit_balance(self):
         for order in self:
             partner = order.partner_id.commercial_partner_id or order.partner_id
             balance = 0.0
             if partner:
-                # partner.credit es el balance por cobrar (lo que el cliente debe).
-                # Si es negativo, el cliente tiene un saldo a favor.
-                # Se lee con sudo() porque 'credit' está restringido a grupos de
-                # contabilidad y el vendedor que abre la orden no los tiene.
-                try:
-                    credit = partner.sudo().credit or 0.0
-                except Exception:
-                    credit = 0.0
-                if credit < -0.01:
-                    balance = -credit
+                # Saldo global del cliente = suma del pendiente de TODAS sus
+                # órdenes confirmadas. Si el neto es negativo, hay saldo a favor.
+                client_orders = self.env['sale.order'].sudo().search([
+                    ('partner_id.commercial_partner_id', '=', partner.id),
+                    ('state', 'in', ['sale', 'done']),
+                ])
+                global_pending = 0.0
+                for o in client_orders:
+                    try:
+                        global_pending += o._statement_pending_in_company_currency()
+                    except Exception:
+                        continue
+                if global_pending < -0.01:
+                    balance = -global_pending
             order.x_customer_credit_balance = balance
             order.x_has_customer_credit = balance > 0.01
 

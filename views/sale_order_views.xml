@@ -4,6 +4,9 @@
         <field name="name">sale.order.form.inherit.account.statement</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
+        <!-- Prioridad alta: debe aplicarse después de extended_metrics (60) y
+             kpi_dashboard (70) para poder modificar el campo 'Pendiente por Pagar'. -->
+        <field name="priority">90</field>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="action_print_account_statement"
@@ -15,15 +18,20 @@
                         invisible="state in ('draft', 'sent', 'cancel')"/>
             </xpath>
 
+            <!-- Cuando hay saldo a favor global, se oculta 'Pendiente por Pagar'. -->
+            <xpath expr="//field[@name='amount_pending_to_pay']" position="attributes">
+                <attribute name="invisible">x_has_customer_credit</attribute>
+            </xpath>
+
             <!-- Indicador de saldo a favor del cliente, debajo del total -->
-            <!-- DIAGNÓSTICO: visible siempre por ahora (mismo patrón que 'Pendiente por Pagar'). -->
             <xpath expr="//field[@name='tax_totals']" position="after">
                 <field name="x_company_currency_id" invisible="1"/>
                 <field name="x_has_customer_credit" invisible="1"/>
                 <field name="x_customer_credit_balance"
                        class="oe_subtotal_footer_separator"
                        decoration-bf="1"
-                       decoration-success="x_customer_credit_balance &gt; 0"/>
+                       decoration-success="1"
+                       invisible="not x_has_customer_credit"/>
             </xpath>
         </field>
     </record>
