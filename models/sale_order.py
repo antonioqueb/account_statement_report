@@ -25,40 +25,54 @@ class SaleOrder(models.Model):
         compute='_compute_customer_credit_balance',
     )
 
-    def _statement_pending_in_company_currency(self):
-        """Pendiente por pagar de ESTA orden, en moneda de la compañía.
+    def _statement_banorte_rate(self):
+        """Tipo de cambio Banorte, idéntico al usado por el wizard/reporte."""
+        rate_param = self.env['ir.config_parameter'].sudo().get_param('banorte.last_rate', '0')
+        try:
+            rate = float(rate_param)
+        except (ValueError, TypeError):
+            rate = 0.0
 
-        Replica la lógica de los módulos de métricas/KPI:
-        pendiente = total de la orden - pagos conciliados.
-        Si es negativo, la orden tiene un saldo a favor (sobrepago).
+        if rate <= 0:
+            usd = self.env.ref('base.USD', raise_if_not_found=False)
+            company_currency = self.env.company.currency_id
+            if usd and company_currency and company_currency.name == 'MXN':
+                rate = usd._convert(1.0, company_currency, self.env.company, fields.Date.today())
+            elif usd and company_currency and company_currency.name == 'USD':
+                mxn = self.env.ref('base.MXN', raise_if_not_found=False)
+                if mxn:
+                    rate = mxn._convert(1.0, usd, self.env.company, fields.Date.today())
+                    rate = 1 / rate if rate > 0 else 0
+        return rate
+
+    def _statement_balance_mxn(self, banorte_rate):
+        """Saldo (balance) de ESTA orden expresado en MXN.
+
+        Usa EXACTAMENTE la misma lógica que el reporte (`_get_statement_data`):
+        balance = total de la orden - pagos conciliados (monto completo del pago),
+        convertido a MXN con el tipo de cambio Banorte. Negativo = saldo a favor.
         """
         self.ensure_one()
-        order = self
-        company = order.company_id or self.env.company
-        company_currency = company.currency_id
-        convert_date = (order.date_order and order.date_order.date()) or fields.Date.today()
+        currency_name = self.currency_id.name or 'USD'
 
-        def to_company(amount, from_currency, date=None):
-            if not from_currency or from_currency == company_currency:
-                return amount
-            return from_currency._convert(
-                amount, company_currency, company, date or fields.Date.today()
-            )
-
-        amount_total = to_company(order.amount_total, order.currency_id, convert_date)
-
-        invoices = order.invoice_ids.filtered(
-            lambda inv: inv.state == 'posted' and inv.move_type == 'out_invoice'
-        )
         total_paid = 0.0
-        for invoice in invoices:
-            for partial in invoice.sudo().line_ids.mapped('matched_credit_ids'):
-                pay = partial.credit_move_id.payment_id
-                if pay:
-                    # partial.amount ya está en moneda de la compañía.
-                    total_paid += partial.amount
+        for inv in self._get_related_invoices():
+            for payment in inv._get_reconciled_payments():
+                if payment.currency_id == self.currency_id:
+                    total_paid += payment.amount
+                elif payment.currency_id.name == 'MXN' and currency_name == 'USD' and banorte_rate > 0:
+                    total_paid += payment.amount / banorte_rate
+                elif payment.currency_id.name == 'USD' and currency_name == 'MXN' and banorte_rate > 0:
+                    total_paid += payment.amount * banorte_rate
+                else:
+                    total_paid += payment.amount
 
-        return amount_total - total_paid
+        balance = self.amount_total - total_paid  # en moneda de la orden
+
+        if currency_name == 'USD' and banorte_rate > 0:
+            return balance * banorte_rate
+        # MXN (o moneda de compañía) se asume ya en pesos
+        return balance
 
     @api.depends(
         'partner_id', 'amount_total',
@@ -68,24 +82,26 @@ class SaleOrder(models.Model):
         'invoice_ids.line_ids.matched_credit_ids',
     )
     def _compute_customer_credit_balance(self):
+        banorte_rate = self._statement_banorte_rate()
         for order in self:
             partner = order.partner_id.commercial_partner_id or order.partner_id
             balance = 0.0
             if partner:
-                # Saldo global del cliente = suma del pendiente de TODAS sus
-                # órdenes confirmadas. Si el neto es negativo, hay saldo a favor.
+                # Saldo global del cliente = suma del balance (en MXN) de TODAS
+                # sus órdenes confirmadas, con la misma lógica del reporte.
+                # Si el neto es negativo, hay saldo a favor.
                 client_orders = self.env['sale.order'].sudo().search([
                     ('partner_id.commercial_partner_id', '=', partner.id),
                     ('state', 'in', ['sale', 'done']),
                 ])
-                global_pending = 0.0
+                total_balance_mxn = 0.0
                 for o in client_orders:
                     try:
-                        global_pending += o._statement_pending_in_company_currency()
+                        total_balance_mxn += o._statement_balance_mxn(banorte_rate)
                     except Exception:
                         continue
-                if global_pending < -0.01:
-                    balance = -global_pending
+                if total_balance_mxn < -0.01:
+                    balance = -total_balance_mxn
             order.x_customer_credit_balance = balance
             order.x_has_customer_credit = balance > 0.01
 
