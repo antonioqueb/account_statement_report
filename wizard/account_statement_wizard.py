@@ -152,7 +152,9 @@ class AccountStatementWizard(models.TransientModel):
         banorte_rate = self._get_banorte_rate()
         for order in orders:
             data = order._get_statement_data(banorte_rate)
-            if data['balance'] > 0.01:
+            # Incluye tanto saldos pendientes (positivos) como saldos a favor
+            # (negativos, cuando los pagos superan el total de la orden).
+            if abs(data['balance']) > 0.01:
                 open_orders |= order
         return open_orders
 
@@ -205,7 +207,9 @@ class AccountStatementWizard(models.TransientModel):
         for order in orders:
             data = order._get_statement_data(banorte_rate)
 
-            if not self.order_ids and not self.include_fully_paid and data['balance'] <= 0.01:
+            # Se omiten únicamente las órdenes liquidadas (saldo ~0). Las órdenes
+            # con saldo a favor (balance negativo) sí se incluyen.
+            if not self.order_ids and not self.include_fully_paid and abs(data['balance']) <= 0.01:
                 continue
 
             orders_data.append(data)
