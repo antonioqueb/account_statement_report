@@ -7,6 +7,7 @@
 
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000;">
+                        <t t-call="stock_lot_dimensions.som_report_style"/>
 
                         <!-- ============================================================ -->
                         <!-- DETALLE POR ORDEN DE VENTA                                   -->
@@ -17,64 +18,62 @@
                             <div style="border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
                                 <div class="row" style="align-items: center;">
                                     <div class="col-5">
-                                        <h3 style="font-weight: 900; margin: 0; font-size: 20px;">DETALLE: <t t-esc="od.get('order_name', '')"/></h3>
+                                        <h3 class="som-doc-title" style="margin: 0;">DETALLE: <t t-esc="od.get('order_name', '')"/></h3>
                                     </div>
                                     <div class="col-4 text-center">
-                                        <div style="font-size: 10px; color: #555;">
-                                            Moneda original: <strong style="font-size: 14px;"><t t-esc="od.get('currency', '')"/></strong>
+                                        <div class="som-doc-subtitle" style="margin: 0;">
+                                            Moneda original: <strong style="font-size: 12px; color: #222;"><t t-esc="od.get('currency', '')"/></strong>
                                         </div>
                                     </div>
                                     <div class="col-3 text-end">
-                                        <div style="font-size: 10px; color: #555;">Fecha: <strong><t t-esc="od.get('order_date', '')"/></strong></div>
+                                        <div class="som-doc-subtitle" style="margin: 0;">Fecha: <strong style="color: #222;"><t t-esc="od.get('order_date', '')"/></strong></div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <div class="col-6">
-                                    <div style="font-size: 10px; color: #888; text-transform: uppercase;">Cliente</div>
+                                    <div class="som-small som-upper som-muted">Cliente</div>
                                     <div style="font-size: 14px; font-weight: 700;"><t t-esc="partner_name"/></div>
                                 </div>
                                 <div class="col-6">
-                                    <div style="font-size: 10px; color: #888; text-transform: uppercase;">Vendedor</div>
+                                    <div class="som-small som-upper som-muted">Vendedor</div>
                                     <div style="font-size: 11px;"><t t-esc="od.get('seller_name', '')"/></div>
                                 </div>
                             </div>
 
                             <!-- TABLA DE MATERIALES -->
                             <t t-if="od.get('material_lines')">
-                                <div style="background-color: #eee; padding: 3px 10px; margin-bottom: 2px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Materiales</strong>
-                                </div>
+                                <div class="som-section-title">Materiales</div>
 
                                 <!-- Determinar qué columnas de precio mostrar -->
                                 <t t-set="show_alt" t-value="report_currency == 'both'"/>
                                 <t t-set="display_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
                                 <t t-set="alt_currency" t-value="od.get('material_lines', [{}])[0].get('currency_alt', '') if report_currency == 'both' else ''"/>
 
-                                <table class="table table-sm" style="font-size: 8.5px; width: 100%; border-collapse: collapse;">
+                                <table class="som-table">
                                     <thead>
-                                        <tr style="background-color: #000; color: #fff;">
-                                            <th style="padding: 5px 4px; color: #fff; font-weight: 700; width: 3%;">#</th>
-                                            <th style="padding: 5px 4px; color: #fff; font-weight: 700; width: 22%;">Material</th>
-                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 8%;">Vendido</th>
-                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 8%;">Entregado</th>
-                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 7%;">Devuelto</th>
-                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 8%;">Pendiente</th>
-                                            <th class="text-center" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 6%;">% Neto</th>
-                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 11%;">
+                                        <tr>
+                                            <th style="width: 3%;">#</th>
+                                            <th style="width: 22%;">Material</th>
+                                            <th class="som-num" style="width: 8%;">Vendido</th>
+                                            <th class="som-num" style="width: 8%;">Entregado</th>
+                                            <th class="som-num" style="width: 7%;">Devuelto</th>
+                                            <th class="som-num" style="width: 8%;">Pendiente</th>
+                                            <th class="text-center" style="width: 6%;">% Neto</th>
+                                            <th class="som-num" style="width: 11%;">
                                                 P.U. <t t-esc="display_currency"/>
                                             </th>
                                             <t t-if="show_alt">
-                                                <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 11%;">
+                                                <th class="som-num" style="width: 11%;">
                                                     P.U. <t t-esc="alt_currency"/>
                                                 </th>
                                             </t>
-                                            <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 13%;">
+                                            <th class="som-num" style="width: 13%;">
                                                 Total <t t-esc="display_currency"/>
                                             </th>
                                             <t t-if="show_alt">
-                                                <th class="text-end" style="padding: 5px 4px; color: #fff; font-weight: 700; width: 13%;">
+                                                <th class="som-num" style="width: 13%;">
                                                     Total <t t-esc="alt_currency"/>
                                                 </th>
                                             </t>
@@ -96,36 +95,36 @@
                                                 <t t-set="pu_display" t-value="ml.get('price_unit', 0)"/>
                                                 <t t-set="total_display" t-value="ml.get('subtotal', 0)"/>
                                             </t>
-                                            <tr style="border-bottom: 1px solid #ddd;">
-                                                <td style="padding: 4px 4px;" class="text-center">
+                                            <tr>
+                                                <td class="text-center">
                                                     <t t-esc="mat_seq"/>
                                                     <t t-set="mat_seq" t-value="mat_seq + 1"/>
                                                 </td>
-                                                <td style="padding: 4px 4px; font-weight: 600;"><t t-esc="ml.get('product_name', '')"/></td>
-                                                <td class="text-end" style="padding: 4px 4px;">
+                                                <td style="font-weight: 600;"><t t-esc="ml.get('product_name', '')"/></td>
+                                                <td class="som-num">
                                                     <t t-esc="'%.2f' % ml.get('qty_ordered', 0)"/> <span style="font-size: 7px;"><t t-esc="ml.get('uom', 'm²')"/></span>
                                                 </td>
-                                                <td class="text-end" style="padding: 4px 4px; color: #28a745; font-weight: 700;">
+                                                <td class="som-num" style="color: #28a745; font-weight: 700;">
                                                     <t t-esc="'%.2f' % ml.get('qty_delivered_net', ml.get('qty_delivered', 0))"/>
                                                 </td>
-                                                <td class="text-end" style="padding: 4px 4px; color: #b45309; font-weight: 700;">
+                                                <td class="som-num" style="color: #b45309; font-weight: 700;">
                                                     <t t-esc="'%.2f' % ml.get('qty_returned', 0)"/>
                                                 </td>
-                                                <td class="text-end" style="padding: 4px 4px; color: #c00; font-weight: 700;"><t t-esc="'%.2f' % ml.get('qty_pending', 0)"/></td>
-                                                <td class="text-center" style="padding: 4px 4px;">
+                                                <td class="som-num" style="color: #c00; font-weight: 700;"><t t-esc="'%.2f' % ml.get('qty_pending', 0)"/></td>
+                                                <td class="text-center">
                                                     <t t-set="pct" t-value="ml.get('pct_delivered_net', ml.get('pct_delivered', 0))"/>
                                                     <t t-set="pct_color" t-value="'#28a745' if pct &gt;= 100 else '#ffc107' if pct &gt;= 50 else '#dc3545'"/>
                                                     <div t-attf-style="background-color: {{pct_color}}; color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700;">
                                                         <t t-esc="'%.0f' % pct"/>%
                                                     </div>
                                                 </td>
-                                                <td class="text-end" style="padding: 4px 4px;">$<t t-esc="'{:,.2f}'.format(pu_display)"/></td>
+                                                <td class="som-num">$<t t-esc="'{:,.2f}'.format(pu_display)"/></td>
                                                 <t t-if="show_alt">
-                                                    <td class="text-end" style="padding: 4px 4px; color: #555;">$<t t-esc="'{:,.2f}'.format(ml.get('price_unit_alt', 0))"/></td>
+                                                    <td class="som-num som-muted">$<t t-esc="'{:,.2f}'.format(ml.get('price_unit_alt', 0))"/></td>
                                                 </t>
-                                                <td class="text-end" style="padding: 4px 4px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_display)"/></td>
+                                                <td class="som-num" style="font-weight: 700;">$<t t-esc="'{:,.2f}'.format(total_display)"/></td>
                                                 <t t-if="show_alt">
-                                                    <td class="text-end" style="padding: 4px 4px; color: #555;">$<t t-esc="'{:,.2f}'.format(ml.get('subtotal_alt', 0))"/></td>
+                                                    <td class="som-num som-muted">$<t t-esc="'{:,.2f}'.format(ml.get('subtotal_alt', 0))"/></td>
                                                 </t>
                                             </tr>
                                         </t>
@@ -135,17 +134,15 @@
 
                             <!-- TABLA DE SERVICIOS -->
                             <t t-if="od.get('service_lines')">
-                                <div style="background-color: #eee; padding: 3px 10px; margin-bottom: 2px; margin-top: 10px;">
-                                    <strong style="font-size: 10px; text-transform: uppercase;">Servicios Adicionales</strong>
-                                </div>
+                                <div class="som-section-title" style="margin-top: 10px;">Servicios Adicionales</div>
                                 <t t-set="svc_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
-                                <table class="table table-sm" style="font-size: 9px; width: 100%; border-collapse: collapse;">
+                                <table class="som-table">
                                     <thead>
-                                        <tr style="background-color: #2f2f2f; color: #fff;">
-                                            <th style="padding: 5px; color: #fff; font-weight: 700;">Descripción</th>
-                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">Cantidad</th>
-                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">P.U. <t t-esc="svc_currency"/></th>
-                                            <th class="text-end" style="padding: 5px; color: #fff; font-weight: 700;">Total <t t-esc="svc_currency"/></th>
+                                        <tr>
+                                            <th style="width: 55%;">Descripción</th>
+                                            <th class="som-num" style="width: 15%;">Cantidad</th>
+                                            <th class="som-num" style="width: 15%;">P.U. <t t-esc="svc_currency"/></th>
+                                            <th class="som-num" style="width: 15%;">Total <t t-esc="svc_currency"/></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -162,11 +159,11 @@
                                                 <t t-set="sl_pu" t-value="sl.get('price_unit', 0)"/>
                                                 <t t-set="sl_total" t-value="sl.get('subtotal', 0)"/>
                                             </t>
-                                            <tr style="border-bottom: 1px solid #ddd;">
-                                                <td style="padding: 4px 5px;"><t t-esc="sl.get('product_name', '')"/></td>
-                                                <td class="text-end" style="padding: 4px 5px;"><t t-esc="'%.2f' % sl.get('qty_ordered', 0)"/></td>
-                                                <td class="text-end" style="padding: 4px 5px;">$<t t-esc="'{:,.2f}'.format(sl_pu)"/></td>
-                                                <td class="text-end" style="padding: 4px 5px; font-weight: 700;">$<t t-esc="'{:,.2f}'.format(sl_total)"/></td>
+                                            <tr>
+                                                <td><t t-esc="sl.get('product_name', '')"/></td>
+                                                <td class="som-num"><t t-esc="'%.2f' % sl.get('qty_ordered', 0)"/></td>
+                                                <td class="som-num">$<t t-esc="'{:,.2f}'.format(sl_pu)"/></td>
+                                                <td class="som-num" style="font-weight: 700;">$<t t-esc="'{:,.2f}'.format(sl_total)"/></td>
                                             </tr>
                                         </t>
                                     </tbody>
