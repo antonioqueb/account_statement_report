@@ -46,6 +46,9 @@ class AccountStatementReportParser(models.AbstractModel):
             'customer_credit_mxn': report_data.get('customer_credit_mxn', 0),
             'customer_credit_usd': report_data.get('customer_credit_usd', 0),
             'has_customer_credit': report_data.get('has_customer_credit', False),
+            'show_original': report_data.get('show_original', False),
+            'date_from': report_data.get('date_from', ''),
+            'date_to': report_data.get('date_to', ''),
         }
         _logger.info(
             "PARSER: orders=%s, partner=%s, report_currency=%s, usd=%s, mxn=%s",

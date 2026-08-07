@@ -179,7 +179,11 @@ class AccountStatementWizard(models.TransientModel):
             'context': self.env.context,
         }
 
-    def action_print_statement(self):
+    def action_print_statement_original(self):
+        """Versión con SOLICITUD ORIGINAL y DIFERENCIA por línea."""
+        return self.action_print_statement(show_original=True)
+
+    def action_print_statement(self, show_original=False):
         """Genera el reporte PDF"""
         self.ensure_one()
 
@@ -272,6 +276,7 @@ class AccountStatementWizard(models.TransientModel):
             'customer_credit_mxn': customer_credit_mxn,
             'customer_credit_usd': customer_credit_usd,
             'has_customer_credit': has_customer_credit,
+            'show_original': bool(show_original),
         }
 
         return self.env.ref('account_statement_report.action_report_account_statement').report_action(self, data=data)

@@ -163,6 +163,10 @@
 
                 <!-- Footer con botones -->
                 <footer class="pt-3">
+                    <button string="Generar con Solicitud Original"
+                            name="action_print_statement_original"
+                            type="object"
+                            class="btn-secondary"/>
                     <button string="Generar Estado de Cuenta"
                             name="action_print_statement"
                             type="object"

@@ -319,9 +319,17 @@ class SaleOrder(models.Model):
                 qty_delivered_net / qty_ordered * 100
             ) if qty_ordered > 0 else 0.0
 
+            qty_original = float(getattr(
+                line, 'original_product_uom_qty', 0.0) or 0.0) or qty_ordered
+
             line_data = {
                 'product_name': line.product_id.display_name or line.name,
                 'qty_ordered': qty_ordered,
+                'qty_original': qty_original,
+                'qty_diff': qty_ordered - qty_original,
+                'subtotal_original': (
+                    line.price_subtotal / qty_ordered * qty_original
+                ) if qty_ordered else line.price_subtotal,
                 'qty_delivered': qty_delivered_net,
                 'qty_delivered_net': qty_delivered_net,
                 'qty_delivered_gross': qty_delivered_gross,
@@ -401,6 +409,10 @@ class SaleOrder(models.Model):
             total_usd = amount_total if currency_name == 'USD' else 0.0
             total_mxn = amount_total if currency_name == 'MXN' else 0.0
 
+        all_lines = material_lines + service_lines
+        amount_untaxed_original = sum(
+            l.get('subtotal_original', 0.0) for l in all_lines)
+
         return {
             'order_name': self.name,
             'order_date': str(self.date_order.date()) if self.date_order else '',
@@ -413,6 +425,10 @@ class SaleOrder(models.Model):
             'total_returned_qty': total_returned_qty,
             'payments': payments_data,
             'amount_untaxed': amount_untaxed,
+            'amount_untaxed_original': amount_untaxed_original,
+            'amount_untaxed_diff': amount_untaxed - amount_untaxed_original,
+            'has_original_diff': any(
+                abs(l.get('qty_diff', 0.0)) > 0.001 for l in all_lines),
             'amount_tax': amount_tax,
             'amount_total': amount_total,
             'total_paid': total_paid,
