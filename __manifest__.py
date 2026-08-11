@@ -1,6 +1,6 @@
 {
     'name': 'Estado de Cuenta - Reporte de Clientes',
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.1.0',
     'category': 'Sales/Sales',
     'summary': 'Reporte PDF de estado de cuenta por cliente y/o proyecto',
     'author': 'Alphaqueb Consulting SAS',
@@ -14,6 +14,7 @@
         'sale_order_extended_metrics',
     ],
     'data': [
+        'views/account_move_views.xml',
         'security/ir.model.access.csv',
         'wizard/account_statement_wizard_views.xml',
         'report/account_statement_report.xml',
