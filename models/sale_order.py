@@ -106,9 +106,17 @@ class SaleOrder(models.Model):
             order.x_has_customer_credit = balance > 0.01
 
     def _get_related_invoices(self):
-        """Retorna las facturas relacionadas a esta orden de venta."""
+        """Retorna las facturas relacionadas a esta orden de venta.
+
+        SUDO deliberado: el estado de cuenta es una función de VENTAS y los
+        vendedores no tienen (ni deben necesitar) permisos de contabilidad.
+        Todas las lecturas contables del módulo (facturas, pagos conciliados)
+        pasan por este embudo; el sudo aquí libera el wizard, el PDF, el
+        botón por orden y el saldo a favor del cliente sin abrir el resto de
+        la contabilidad. El universo ya está acotado a las facturas de ESTA
+        orden."""
         self.ensure_one()
-        return self.invoice_ids.filtered(
+        return self.sudo().invoice_ids.filtered(
             lambda inv: inv.state == 'posted' and inv.move_type == 'out_invoice'
         )
 
@@ -323,7 +331,11 @@ class SaleOrder(models.Model):
                 line, 'original_product_uom_qty', 0.0) or 0.0) or qty_ordered
 
             line_data = {
-                'product_name': line.product_id.display_name or line.name,
+                # Máscara comercial por venta: el estado de cuenta también
+                # imprime el nombre con el que el cliente conoce el material.
+                'product_name': (
+                    getattr(line, 'x_mask_name', '') or ''
+                ) or line.product_id.display_name or line.name,
                 'qty_ordered': qty_ordered,
                 'qty_original': qty_original,
                 'qty_diff': qty_ordered - qty_original,
