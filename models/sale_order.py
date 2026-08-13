@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+from odoo.addons.account_statement_report.models.som_date_format import som_format_date
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -209,7 +210,7 @@ class SaleOrder(models.Model):
             )
 
             doc_date = doc.delivery_date or doc.create_date
-            doc_date_str = fields.Datetime.to_string(doc_date) if doc_date else ''
+            doc_date_str = som_format_date(doc_date, empty='')
 
             for line in doc.line_ids.sorted(lambda l: (l.sequence, l.id)):
                 qty = self._statement_return_qty_from_doc_line(line)
@@ -387,7 +388,7 @@ class SaleOrder(models.Model):
             for payment in inv._get_reconciled_payments():
                 payments_data.append({
                     'name': payment.name or '',
-                    'date': str(payment.date) if payment.date else '',
+                    'date': som_format_date(payment.date, empty=''),
                     'amount': payment.amount,
                     'currency': payment.currency_id.name,
                 })
@@ -427,7 +428,7 @@ class SaleOrder(models.Model):
 
         return {
             'order_name': self.name,
-            'order_date': str(self.date_order.date()) if self.date_order else '',
+            'order_date': som_format_date(self.date_order, empty=''),
             'seller_name': self.user_id.name or '',
             'currency': currency_name,
             'material_lines': material_lines,

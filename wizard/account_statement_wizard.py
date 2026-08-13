@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+from odoo.addons.account_statement_report.models.som_date_format import som_format_date
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -258,10 +259,10 @@ class AccountStatementWizard(models.TransientModel):
             'partner_name': self.partner_id.name,
             'partner_vat': self.partner_id.vat or '',
             'project_name': self.project_id.name if self.project_id else '',
-            'date_from': str(self.date_from) if self.date_from else '',
-            'date_to': str(self.date_to) if self.date_to else '',
+            'date_from': som_format_date(self.date_from, empty=''),
+            'date_to': som_format_date(self.date_to, empty=''),
             'banorte_rate': banorte_rate,
-            'statement_date': str(fields.Date.today()),
+            'statement_date': som_format_date(fields.Date.today(), empty=''),
             'orders_data': orders_data,
             'total_balance_usd': total_balance_usd,
             'total_balance_mxn': total_balance_mxn,
