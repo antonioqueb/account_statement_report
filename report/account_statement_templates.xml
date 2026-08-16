@@ -1,154 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ══════════════════════════════════════════════════════════════════
+         ESTADO DE CUENTA — versión compacta, directa al detalle.
+
+         QUÉ CAMBIÓ Y POR QUÉ (2026-08-15):
+
+         · SIN PORTADA. El resumen ejecutivo ocupaba una hoja entera para
+           repetir cifras que el detalle ya trae. Los números NO se
+           perdieron: viven en la tira de totales del encabezado, en una
+           línea. Se abre el PDF y se ve el detalle.
+
+         · SIN page-break-before por orden. Ese salto forzado era la razón
+           real de que un estado de cuenta de una orden ocupara tres hojas.
+           Ahora las órdenes fluyen; solo se protege que los totales y el
+           saldo no se partan a la mitad.
+
+         · El cliente se imprime UNA vez, en el encabezado. Antes se
+           repetía en cada orden.
+
+         · Branding: se apoya en el sistema de diseño de reportes SOM
+           (som_report_style) y usa el azul institucional como ÚNICO
+           acento. Antes convivían recuadros azules, verdes, rojos y
+           amarillos con bordes de 3px y cifras de 36px — mucho cartel y
+           poca información por hoja. El color ahora solo significa algo:
+           verde = a favor, rojo = pendiente.
+
+         Los ajustes propios van DESPUÉS del t-call, como manda el sistema
+         de diseño: som_report_style no se toca desde aquí.
+         ══════════════════════════════════════════════════════════════════ -->
+
     <template id="account_statement">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="wizard">
-
                 <t t-call="web.external_layout">
-                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000;">
+                    <div class="page st-page">
                         <t t-call="stock_lot_dimensions.som_report_style"/>
 
-                        <!-- ============================================================ -->
-                        <!-- PORTADA: RESUMEN EJECUTIVO (primero lo importante)           -->
-                        <!-- ============================================================ -->
-                        <t t-set="net_mxn_credit" t-value="total_balance_mxn &lt; -0.01"/>
-                        <t t-set="net_usd_credit" t-value="total_balance_usd &lt; -0.01"/>
-                        <t t-set="net_mxn_color" t-value="'#0b6e38' if net_mxn_credit else '#b91c1c'"/>
-                        <t t-set="net_usd_color" t-value="'#0b6e38' if net_usd_credit else '#b91c1c'"/>
+                        <style type="text/css">
+                            .st-page { font-size: 9px; color: #222; }
 
-                        <div style="border-bottom: 3px solid #155f94; padding-bottom: 10px; margin-bottom: 16px;">
+                            .st-head { border-bottom: 2.5px solid #155f94;
+                                       padding-bottom: 5px; margin-bottom: 7px; }
+                            .st-title { font-size: 15px; font-weight: 800;
+                                        letter-spacing: 1.2px; color: #155f94;
+                                        text-transform: uppercase; margin: 0; }
+                            .st-flag { font-size: 7.5px; font-weight: 700;
+                                       color: #8f6500; text-transform: uppercase;
+                                       letter-spacing: .4px; }
+                            .st-meta { font-size: 8px; color: #5a6b78;
+                                       line-height: 1.35; }
+                            .st-meta strong { color: #222; }
+
+                            /* Tiras de datos: tabla, no flex — wkhtmltopdf */
+                            .st-strip { width: 100%; border-collapse: collapse;
+                                        margin-bottom: 6px; table-layout: fixed; }
+                            .st-strip td { border: 1px solid #d8d8d8;
+                                           padding: 3px 7px; vertical-align: top; }
+                            .st-k { display: block; font-size: 7px;
+                                    text-transform: uppercase; letter-spacing: .4px;
+                                    color: #6b7a86; }
+                            .st-v { font-size: 10px; font-weight: 700; color: #0f172a; }
+                            .st-v-sm { font-size: 8.5px; font-weight: 600; color: #0f172a; }
+
+                            .st-tot td { border: 1px solid #155f94; text-align: center; }
+                            .st-tot .st-k { color: #155f94; font-weight: 700; }
+                            .st-tot .st-v { font-size: 11.5px; }
+
+                            /* Banda de orden */
+                            .st-obar { width: 100%; border-collapse: collapse;
+                                       margin: 9px 0 4px; table-layout: fixed; }
+                            .st-obar td { background-color: #155f94; color: #fff;
+                                          padding: 3px 8px; font-size: 9px; }
+                            .st-obar .st-oname { font-weight: 800; font-size: 10px;
+                                                 text-transform: uppercase;
+                                                 letter-spacing: .6px; }
+                            .st-obar .st-osub { text-align: right; color: #cfe3f2;
+                                                font-size: 8px; }
+
+                            /* Tablas: más apretadas que la base del sistema */
+                            .st-page .som-table { font-size: 8px; }
+                            .st-page .som-table th { padding: 2.5px 4px; font-size: 7.5px;
+                                                     line-height: 1.15; }
+                            .st-page .som-table td { padding: 2px 4px; line-height: 1.2; }
+                            .st-page .som-section-title { padding: 3px 6px; font-size: 8.5px;
+                                                          margin: 6px 0 3px; }
+                            .st-page .som-totals { font-size: 8.5px; }
+                            .st-page .som-totals td { padding: 1.5px 6px; }
+                            .st-page .som-totals .som-grand td { font-size: 10px;
+                                                                 padding-top: 3px; }
+
+                            /* Cierre de orden: totales + saldo no se parten */
+                            .st-close { page-break-inside: avoid; }
+                            .st-bal { width: 100%; border-collapse: collapse;
+                                      margin-top: 4px; table-layout: fixed; }
+                            .st-bal td { padding: 4px 8px; border: 1px solid #d8d8d8; }
+                            .st-bal .st-bl { font-size: 8.5px; font-weight: 800;
+                                             text-transform: uppercase;
+                                             letter-spacing: .6px; }
+                            .st-bal .st-bv { text-align: right; font-size: 13px;
+                                             font-weight: 900; white-space: nowrap; }
+
+                            .st-note { font-size: 7.5px; color: #333; line-height: 1.35;
+                                       text-align: justify; }
+                            .st-note p { margin: 0 0 2px 0; }
+                            .st-sign { width: 100%; border-collapse: collapse;
+                                       margin-top: 26px; page-break-inside: avoid; }
+                            .st-sign td { padding-top: 20px; text-align: center;
+                                          font-size: 8px; font-weight: 700;
+                                          text-transform: uppercase; letter-spacing: .5px; }
+                            .st-sign .st-line { border-top: 1px solid #000;
+                                                padding-top: 3px; }
+                        </style>
+
+                        <!-- ══════════ ENCABEZADO (una sola vez) ══════════ -->
+                        <div class="st-head">
                             <div class="row" style="align-items: flex-end;">
-                                <div class="col-7">
-                                    <h2 style="margin: 0; font-weight: 800; letter-spacing: 1px; color: #155f94;">ESTADO DE CUENTA</h2>
-                                    <div t-if="show_original" style="font-size: 10px; font-weight: 700; color: #8f6500; text-transform: uppercase; letter-spacing: .5px;">
-                                        Versión con solicitud original y diferencias
+                                <div class="col-6">
+                                    <div class="st-title">Estado de Cuenta</div>
+                                    <div t-if="show_original" class="st-flag">
+                                        Con solicitud original y diferencias
                                     </div>
                                 </div>
-                                <div class="col-5 text-end" style="font-size: 10px; color: #60798c;">
-                                    Fecha de emisión: <strong style="color: #222;"><t t-esc="statement_date"/></strong>
+                                <div class="col-6 text-end st-meta">
+                                    Emisión: <strong><t t-esc="statement_date"/></strong>
                                     <t t-if="date_from or date_to">
-                                        <br/>Periodo: <strong style="color: #222;"><t t-esc="date_from or '…'"/> — <t t-esc="date_to or '…'"/></strong>
+                                        · Periodo: <strong><t t-esc="date_from or '…'"/> — <t t-esc="date_to or '…'"/></strong>
                                     </t>
                                     <t t-if="report_currency == 'both' and banorte_rate &gt; 0">
-                                        <br/>TC Banorte ref.: <strong style="color: #222;">$<t t-esc="'%.4f' % banorte_rate"/> MXN/USD</strong>
+                                        <br/>TC Banorte ref.: <strong>$<t t-esc="'%.4f' % banorte_rate"/> MXN/USD</strong>
                                     </t>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row" style="margin-bottom: 14px;">
-                            <div class="col-7">
-                                <div class="som-small som-upper som-muted">Cliente</div>
-                                <div style="font-size: 16px; font-weight: 800; color: #0f172a;"><t t-esc="partner_name"/></div>
-                                <div t-if="partner_vat" style="font-size: 10px; color: #60798c;">RFC: <t t-esc="partner_vat"/></div>
-                                <div t-if="project_name" style="font-size: 10px; color: #60798c;">Proyecto: <t t-esc="project_name"/></div>
-                            </div>
-                            <div class="col-5 text-end">
-                                <div class="som-small som-upper som-muted">Órdenes incluidas</div>
-                                <div style="font-size: 16px; font-weight: 800; color: #0f172a;"><t t-esc="total_orders"/></div>
-                            </div>
-                        </div>
+                        <!-- Identidad del cliente: una tira, no media hoja -->
+                        <table class="st-strip">
+                            <tr>
+                                <td style="width: 46%;">
+                                    <span class="st-k">Cliente</span>
+                                    <span class="st-v"><t t-esc="partner_name"/></span>
+                                </td>
+                                <td style="width: 18%;">
+                                    <span class="st-k">RFC</span>
+                                    <span class="st-v-sm"><t t-esc="partner_vat or '—'"/></span>
+                                </td>
+                                <td style="width: 24%;">
+                                    <span class="st-k">Proyecto</span>
+                                    <span class="st-v-sm"><t t-esc="project_name or '—'"/></span>
+                                </td>
+                                <td style="width: 12%;" class="text-center">
+                                    <span class="st-k">Órdenes</span>
+                                    <span class="st-v"><t t-esc="total_orders"/></span>
+                                </td>
+                            </tr>
+                        </table>
 
-                        <div style="border: 2px solid #155f94; border-radius: 10px; overflow: hidden; margin-bottom: 14px;">
-                            <div style="background-color: #155f94; color: #fff; padding: 9px 16px;">
-                                <strong style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #fff; font-size: 12px;">Resumen del Estado de Cuenta</strong>
-                            </div>
-                            <t t-if="report_currency == 'mxn'">
-                                <div style="padding: 18px; text-align: center;">
-                                    <div style="font-size: 11px; color: #60798c; text-transform: uppercase; font-weight: 700;"><t t-esc="'Saldo Total a Favor' if net_mxn_credit else 'Saldo Total Pendiente'"/></div>
-                                    <div t-attf-style="font-size: 36px; font-weight: 900; color: {{ net_mxn_color }}; margin-top: 2px;">$<t t-esc="'{:,.2f}'.format(abs(total_balance_mxn))"/> MXN</div>
-                                </div>
-                            </t>
-                            <t t-elif="report_currency == 'usd'">
-                                <div style="padding: 18px; text-align: center;">
-                                    <div style="font-size: 11px; color: #60798c; text-transform: uppercase; font-weight: 700;"><t t-esc="'Saldo Total a Favor' if net_usd_credit else 'Saldo Total Pendiente'"/></div>
-                                    <div t-attf-style="font-size: 36px; font-weight: 900; color: {{ net_usd_color }}; margin-top: 2px;">$<t t-esc="'{:,.2f}'.format(abs(total_balance_usd))"/> USD</div>
-                                </div>
-                            </t>
-                            <t t-else="">
-                                <div class="row" style="padding: 14px;">
-                                    <div class="col-6 text-center" style="border-right: 1px solid #dceaf2;">
-                                        <div style="font-size: 11px; color: #60798c; text-transform: uppercase; font-weight: 700;"><t t-esc="'Saldo a Favor USD' if net_usd_credit else 'Saldo USD'"/></div>
-                                        <div t-attf-style="font-size: 28px; font-weight: 900; color: {{ net_usd_color }};">$<t t-esc="'{:,.2f}'.format(abs(total_balance_usd))"/></div>
-                                    </div>
-                                    <div class="col-6 text-center">
-                                        <div style="font-size: 11px; color: #60798c; text-transform: uppercase; font-weight: 700;"><t t-esc="'Saldo a Favor MXN' if net_mxn_credit else 'Saldo MXN'"/></div>
-                                        <div t-attf-style="font-size: 28px; font-weight: 900; color: {{ net_mxn_color }};">$<t t-esc="'{:,.2f}'.format(abs(total_balance_mxn))"/></div>
-                                    </div>
-                                </div>
-                            </t>
-                            <div style="background-color: #f8fcff; padding: 8px 16px; border-top: 1px solid #dceaf2;">
-                                <table style="width: 100%; font-size: 10px; color: #284256;">
-                                    <tr>
-                                        <td>Total facturable: <strong>$<t t-esc="'{:,.2f}'.format(total_amount_mxn if report_currency == 'mxn' else total_amount_usd if report_currency == 'usd' else total_amount_mxn)"/> <t t-esc="'MXN' if report_currency != 'usd' else 'USD'"/></strong></td>
-                                        <td class="text-center">Pagado: <strong style="color: #0b6e38;">$<t t-esc="'{:,.2f}'.format(total_paid_mxn if report_currency != 'usd' else total_paid_usd)"/> <t t-esc="'MXN' if report_currency != 'usd' else 'USD'"/></strong></td>
-                                        <td class="text-end">Órdenes USD: <strong><t t-esc="orders_usd_count"/></strong> · MXN: <strong><t t-esc="orders_mxn_count"/></strong></td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
+                        <!-- ══════════ TOTALES: lo que era la portada, en una línea ══════════ -->
+                        <t t-set="net_mxn_credit" t-value="total_balance_mxn &lt; -0.01"/>
+                        <t t-set="net_usd_credit" t-value="total_balance_usd &lt; -0.01"/>
+                        <t t-set="cur_label" t-value="'USD' if report_currency == 'usd' else 'MXN'"/>
+                        <t t-set="tot_billable" t-value="total_amount_usd if report_currency == 'usd' else total_amount_mxn"/>
+                        <t t-set="tot_paid" t-value="total_paid_usd if report_currency == 'usd' else total_paid_mxn"/>
 
-                        <t t-if="has_customer_credit">
-                            <div style="border: 2px solid #0b9e4c; border-radius: 10px; overflow: hidden; margin-bottom: 14px;">
-                                <div style="background-color: #0b9e4c; color: #fff; padding: 8px 16px;">
-                                    <strong style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #fff; font-size: 11px;">Saldo a Favor del Cliente</strong>
-                                    <span style="font-size: 9px; color: #d6f5e0;"> — considerando todas sus órdenes</span>
-                                </div>
-                                <div style="padding: 12px; text-align: center; background: #f0fdf4;">
-                                    <t t-if="report_currency == 'usd'">
-                                        <span style="font-size: 24px; font-weight: 900; color: #0b6e38;">$<t t-esc="'{:,.2f}'.format(customer_credit_usd)"/> USD</span>
-                                    </t>
-                                    <t t-elif="report_currency == 'mxn'">
-                                        <span style="font-size: 24px; font-weight: 900; color: #0b6e38;">$<t t-esc="'{:,.2f}'.format(customer_credit_mxn)"/> MXN</span>
-                                    </t>
-                                    <t t-else="">
-                                        <span style="font-size: 22px; font-weight: 900; color: #0b6e38;">$<t t-esc="'{:,.2f}'.format(customer_credit_usd)"/> USD</span>
-                                        <span style="font-size: 12px; color: #60798c;"> / </span>
-                                        <span style="font-size: 22px; font-weight: 900; color: #0b6e38;">$<t t-esc="'{:,.2f}'.format(customer_credit_mxn)"/> MXN</span>
-                                    </t>
-                                </div>
-                            </div>
-                        </t>
+                        <table class="st-strip st-tot">
+                            <tr>
+                                <td>
+                                    <span class="st-k">Total facturable</span>
+                                    <span class="st-v">$<t t-esc="'{:,.2f}'.format(tot_billable)"/> <t t-esc="cur_label"/></span>
+                                </td>
+                                <td>
+                                    <span class="st-k">Pagado</span>
+                                    <span class="st-v" style="color: #0b6e38;">$<t t-esc="'{:,.2f}'.format(tot_paid)"/> <t t-esc="cur_label"/></span>
+                                </td>
+                                <t t-if="report_currency == 'both'">
+                                    <td>
+                                        <span class="st-k"><t t-esc="'Saldo a favor USD' if net_usd_credit else 'Saldo USD'"/></span>
+                                        <span class="st-v" t-attf-style="color: {{ '#0b6e38' if net_usd_credit else '#b91c1c' }};">$<t t-esc="'{:,.2f}'.format(abs(total_balance_usd))"/></span>
+                                    </td>
+                                    <td>
+                                        <span class="st-k"><t t-esc="'Saldo a favor MXN' if net_mxn_credit else 'Saldo MXN'"/></span>
+                                        <span class="st-v" t-attf-style="color: {{ '#0b6e38' if net_mxn_credit else '#b91c1c' }};">$<t t-esc="'{:,.2f}'.format(abs(total_balance_mxn))"/></span>
+                                    </td>
+                                </t>
+                                <t t-else="">
+                                    <t t-set="net_bal" t-value="total_balance_usd if report_currency == 'usd' else total_balance_mxn"/>
+                                    <t t-set="net_credit" t-value="net_usd_credit if report_currency == 'usd' else net_mxn_credit"/>
+                                    <td>
+                                        <span class="st-k"><t t-esc="'Saldo total a favor' if net_credit else 'Saldo total pendiente'"/></span>
+                                        <span class="st-v" t-attf-style="color: {{ '#0b6e38' if net_credit else '#b91c1c' }};">$<t t-esc="'{:,.2f}'.format(abs(net_bal))"/> <t t-esc="cur_label"/></span>
+                                    </td>
+                                </t>
+                                <td>
+                                    <span class="st-k">Órdenes USD / MXN</span>
+                                    <span class="st-v-sm"><t t-esc="orders_usd_count"/> · <t t-esc="orders_mxn_count"/></span>
+                                </td>
+                            </tr>
+                            <t t-if="has_customer_credit">
+                                <tr>
+                                    <td t-att-colspan="5 if report_currency == 'both' else 4"
+                                        style="background: #f0fdf4; border-color: #0b9e4c; text-align: left;">
+                                        <span class="st-k" style="color: #0b6e38;">Saldo a favor del cliente — considerando todas sus órdenes</span>
+                                        <span class="st-v" style="color: #0b6e38;">
+                                            <t t-if="report_currency == 'usd'">$<t t-esc="'{:,.2f}'.format(customer_credit_usd)"/> USD</t>
+                                            <t t-elif="report_currency == 'mxn'">$<t t-esc="'{:,.2f}'.format(customer_credit_mxn)"/> MXN</t>
+                                            <t t-else="">$<t t-esc="'{:,.2f}'.format(customer_credit_usd)"/> USD · $<t t-esc="'{:,.2f}'.format(customer_credit_mxn)"/> MXN</t>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </table>
 
-                        <!-- ============================================================ -->
-                        <!-- DETALLE POR ORDEN DE VENTA                                   -->
-                        <!-- ============================================================ -->
+                        <!-- ══════════ DETALLE POR ORDEN (sin salto forzado) ══════════ -->
                         <t t-foreach="orders_data" t-as="od">
-                            <div style="page-break-before: always;"/>
 
-                            <div style="border-bottom: 3px solid #155f94; padding-bottom: 8px; margin-bottom: 16px;">
-                                <div class="row" style="align-items: center;">
-                                    <div class="col-5">
-                                        <h3 class="som-doc-title" style="margin: 0;">DETALLE: <t t-esc="od.get('order_name', '')"/></h3>
-                                    </div>
-                                    <div class="col-4 text-center">
-                                        <div class="som-doc-subtitle" style="margin: 0;">
-                                            Moneda original: <strong style="font-size: 12px; color: #222;"><t t-esc="od.get('currency', '')"/></strong>
-                                        </div>
-                                    </div>
-                                    <div class="col-3 text-end">
-                                        <div class="som-doc-subtitle" style="margin: 0;">Fecha: <strong style="color: #222;"><t t-esc="od.get('order_date', '')"/></strong></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <table class="st-obar">
+                                <tr>
+                                    <td style="width: 45%;">
+                                        <span class="st-oname"><t t-esc="od.get('order_name', '')"/></span>
+                                    </td>
+                                    <td class="st-osub" style="width: 55%;">
+                                        <t t-esc="od.get('order_date', '')"/>
+                                        · Moneda <t t-esc="od.get('currency', '')"/>
+                                        <t t-if="od.get('seller_name')"> · Vendedor: <t t-esc="od.get('seller_name', '')"/></t>
+                                    </td>
+                                </tr>
+                            </table>
 
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <div class="som-small som-upper som-muted">Cliente</div>
-                                    <div style="font-size: 14px; font-weight: 700;"><t t-esc="partner_name"/></div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="som-small som-upper som-muted">Vendedor</div>
-                                    <div style="font-size: 11px;"><t t-esc="od.get('seller_name', '')"/></div>
-                                </div>
-                            </div>
-
-                            <!-- TABLA DE MATERIALES -->
+                            <!-- MATERIALES -->
                             <t t-if="od.get('material_lines')">
-                                <div class="som-section-title">Materiales</div>
-
-                                <!-- Determinar qué columnas de precio mostrar -->
                                 <t t-set="show_alt" t-value="report_currency == 'both'"/>
                                 <t t-set="display_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
                                 <t t-set="alt_currency" t-value="od.get('material_lines', [{}])[0].get('currency_alt', '') if report_currency == 'both' else ''"/>
@@ -159,7 +239,7 @@
                                             <th style="width: 3%;">#</th>
                                             <th t-attf-style="width: {{ '18%' if show_original else '22%' }};">Material</th>
                                             <t t-if="show_original">
-                                                <th class="som-num" style="width: 8%;">Sol. Original</th>
+                                                <th class="som-num" style="width: 8%;">Sol. Orig.</th>
                                             </t>
                                             <th class="som-num" style="width: 8%;">Vendido</th>
                                             <t t-if="show_original">
@@ -171,28 +251,19 @@
                                             <t t-if="not show_original">
                                                 <th class="text-center" style="width: 6%;">% Neto</th>
                                             </t>
-                                            <th class="som-num" style="width: 11%;">
-                                                P.U. <t t-esc="display_currency"/>
-                                            </th>
+                                            <th class="som-num" style="width: 11%;">P.U. <t t-esc="display_currency"/></th>
                                             <t t-if="show_alt">
-                                                <th class="som-num" style="width: 11%;">
-                                                    P.U. <t t-esc="alt_currency"/>
-                                                </th>
+                                                <th class="som-num" style="width: 11%;">P.U. <t t-esc="alt_currency"/></th>
                                             </t>
-                                            <th class="som-num" style="width: 13%;">
-                                                Total <t t-esc="display_currency"/>
-                                            </th>
+                                            <th class="som-num" style="width: 13%;">Total <t t-esc="display_currency"/></th>
                                             <t t-if="show_alt">
-                                                <th class="som-num" style="width: 13%;">
-                                                    Total <t t-esc="alt_currency"/>
-                                                </th>
+                                                <th class="som-num" style="width: 13%;">Total <t t-esc="alt_currency"/></th>
                                             </t>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-set="mat_seq" t-value="1"/>
                                         <t t-foreach="od.get('material_lines', [])" t-as="ml">
-                                            <!-- Calcular valores según report_currency -->
                                             <t t-if="report_currency == 'mxn'">
                                                 <t t-set="pu_display" t-value="ml.get('price_unit', 0) if od.get('currency') == 'MXN' else ml.get('price_unit_alt', 0)"/>
                                                 <t t-set="total_display" t-value="ml.get('subtotal', 0) if od.get('currency') == 'MXN' else ml.get('subtotal_alt', 0)"/>
@@ -212,12 +283,10 @@
                                                 </td>
                                                 <td style="font-weight: 600;"><t t-esc="ml.get('product_name', '')"/></td>
                                                 <t t-if="show_original">
-                                                    <td class="som-num" style="color: #555;">
-                                                        <t t-esc="'%.2f' % ml.get('qty_original', 0)"/>
-                                                    </td>
+                                                    <td class="som-num" style="color: #555;"><t t-esc="'%.2f' % ml.get('qty_original', 0)"/></td>
                                                 </t>
                                                 <td class="som-num">
-                                                    <t t-esc="'%.2f' % ml.get('qty_ordered', 0)"/> <span style="font-size: 7px;"><t t-esc="ml.get('uom', 'm²')"/></span>
+                                                    <t t-esc="'%.2f' % ml.get('qty_ordered', 0)"/> <span style="font-size: 6.5px;"><t t-esc="ml.get('uom', 'm²')"/></span>
                                                 </td>
                                                 <t t-if="show_original">
                                                     <t t-set="ml_diff" t-value="ml.get('qty_diff', 0)"/>
@@ -225,20 +294,18 @@
                                                         <t t-esc="('+' if ml_diff &gt; 0.001 else '') + ('%.2f' % ml_diff)"/>
                                                     </td>
                                                 </t>
-                                                <td class="som-num" style="color: #28a745; font-weight: 700;">
+                                                <td class="som-num" style="color: #0b6e38; font-weight: 700;">
                                                     <t t-esc="'%.2f' % ml.get('qty_delivered_net', ml.get('qty_delivered', 0))"/>
                                                 </td>
                                                 <td class="som-num" style="color: #b45309; font-weight: 700;">
                                                     <t t-esc="'%.2f' % ml.get('qty_returned', 0)"/>
                                                 </td>
-                                                <td class="som-num" style="color: #c00; font-weight: 700;"><t t-esc="'%.2f' % ml.get('qty_pending', 0)"/></td>
+                                                <td class="som-num" style="color: #b91c1c; font-weight: 700;"><t t-esc="'%.2f' % ml.get('qty_pending', 0)"/></td>
                                                 <t t-if="not show_original">
                                                     <td class="text-center">
                                                         <t t-set="pct" t-value="ml.get('pct_delivered_net', ml.get('pct_delivered', 0))"/>
-                                                        <t t-set="pct_color" t-value="'#28a745' if pct &gt;= 100 else '#ffc107' if pct &gt;= 50 else '#dc3545'"/>
-                                                        <div t-attf-style="background-color: {{pct_color}}; color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700;">
-                                                            <t t-esc="'%.0f' % pct"/>%
-                                                        </div>
+                                                        <t t-set="pct_color" t-value="'#0b6e38' if pct &gt;= 100 else '#b45309' if pct &gt;= 50 else '#b91c1c'"/>
+                                                        <span t-attf-style="color: {{pct_color}}; font-weight: 800;"><t t-esc="'%.0f' % pct"/>%</span>
                                                     </td>
                                                 </t>
                                                 <td class="som-num">$<t t-esc="'{:,.2f}'.format(pu_display)"/></td>
@@ -255,9 +322,9 @@
                                 </table>
                             </t>
 
-                            <!-- TABLA DE SERVICIOS -->
+                            <!-- SERVICIOS -->
                             <t t-if="od.get('service_lines')">
-                                <div class="som-section-title" style="margin-top: 10px;">Servicios Adicionales</div>
+                                <div class="som-section-title">Servicios Adicionales</div>
                                 <t t-set="svc_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
                                 <table class="som-table">
                                     <thead>
@@ -293,251 +360,216 @@
                                 </table>
                             </t>
 
-                            <!-- DEVOLUCIONES RELACIONADAS -->
+                            <!-- DEVOLUCIONES -->
                             <t t-if="od.get('return_lines')">
-                                <div style="margin-top: 14px;">
-                                    <div class="som-section-title">
-                                        Devoluciones Registradas
-                                        <span style="font-weight: 400; font-size: 9px; color: #555; text-transform: none; margin-left: 6px;">
-                                            <t t-esc="od.get('return_documents_count', 0)"/> documento(s)
-                                        </span>
-                                    </div>
-
-                                    <table class="som-table">
-                                        <thead>
+                                <div class="som-section-title">
+                                    Devoluciones Registradas
+                                    <span style="font-weight: 400; font-size: 7.5px; color: #555; text-transform: none; margin-left: 5px;">
+                                        <t t-esc="od.get('return_documents_count', 0)"/> documento(s) · total <t t-esc="'%.2f' % od.get('total_returned_qty', 0)"/>
+                                    </span>
+                                </div>
+                                <table class="som-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 12%;">Folio</th>
+                                            <th style="width: 12%;">Fecha</th>
+                                            <th style="width: 14%;">Motivo</th>
+                                            <th style="width: 12%;">Acción</th>
+                                            <th style="width: 12%;">Remisión Origen</th>
+                                            <th style="width: 28%;">Material / Lote</th>
+                                            <th class="som-num" style="width: 10%;">Cantidad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="od.get('return_lines', [])" t-as="ret">
                                             <tr>
-                                                <th style="width: 12%;">Folio</th>
-                                                <th style="width: 13%;">Fecha</th>
-                                                <th style="width: 13%;">Motivo</th>
-                                                <th style="width: 12%;">Acción</th>
-                                                <th style="width: 12%;">Remisión Origen</th>
-                                                <th style="width: 28%;">Material / Lote</th>
-                                                <th class="som-num" style="width: 10%;">Cantidad</th>
+                                                <td style="font-weight: 700;"><t t-esc="ret.get('return_name', '')"/></td>
+                                                <td><t t-esc="ret.get('return_date', '')"/></td>
+                                                <td><t t-esc="ret.get('return_reason', '') or '-'"/></td>
+                                                <td><t t-esc="ret.get('return_action', '') or '-'"/></td>
+                                                <td><t t-esc="ret.get('origin_remission', '') or '-'"/></td>
+                                                <td>
+                                                    <strong><t t-esc="ret.get('product_name', '')"/></strong>
+                                                    <t t-if="ret.get('lot_name')">
+                                                        <span style="font-size: 7px; color: #666;"> · Lote <t t-esc="ret.get('lot_name', '')"/></span>
+                                                    </t>
+                                                </td>
+                                                <td class="som-num" style="font-weight: 800; color: #b45309;">
+                                                    <t t-esc="'%.2f' % ret.get('qty_returned', 0)"/>
+                                                    <span style="font-size: 6.5px;"><t t-esc="ret.get('uom', '')"/></span>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            <t t-foreach="od.get('return_lines', [])" t-as="ret">
-                                                <tr>
-                                                    <td style="font-weight: 700;"><t t-esc="ret.get('return_name', '')"/></td>
-                                                    <td><t t-esc="ret.get('return_date', '')"/></td>
-                                                    <td><t t-esc="ret.get('return_reason', '') or '-'"/></td>
-                                                    <td><t t-esc="ret.get('return_action', '') or '-'"/></td>
-                                                    <td><t t-esc="ret.get('origin_remission', '') or '-'"/></td>
-                                                    <td>
-                                                        <strong><t t-esc="ret.get('product_name', '')"/></strong>
-                                                        <t t-if="ret.get('lot_name')">
-                                                            <br/>
-                                                            <span style="font-size: 7.5px; color: #666;">Lote: <t t-esc="ret.get('lot_name', '')"/></span>
-                                                        </t>
-                                                    </td>
-                                                    <td class="som-num" style="font-weight: 800; color: #b45309;">
-                                                        <t t-esc="'%.2f' % ret.get('qty_returned', 0)"/>
-                                                        <span style="font-size: 7px;"><t t-esc="ret.get('uom', '')"/></span>
-                                                    </td>
-                                                </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+
+                            <!-- PAGOS -->
+                            <div class="som-section-title" style="margin-top: 6px;">Pagos Registrados</div>
+                            <t t-if="od.get('payments')">
+                                <table class="som-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Folio de Pago</th>
+                                            <th style="width: 18%;">Fecha</th>
+                                            <t t-if="report_currency == 'both'">
+                                                <th style="width: 12%;">Moneda</th>
                                             </t>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr style="background-color: #f2f2f2; border-top: 2px solid #2f2f2f;">
-                                                <td colspan="6" class="text-end som-upper" style="padding: 5px 6px; font-weight: 800;">
-                                                    Total devuelto en esta orden
-                                                </td>
-                                                <td class="som-num" style="padding: 5px 6px; font-weight: 800; color: #b45309;">
-                                                    <t t-esc="'%.2f' % od.get('total_returned_qty', 0)"/>
+                                            <th class="som-num" style="width: 22%;">Monto Pagado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="od.get('payments', [])" t-as="pmt">
+                                            <tr>
+                                                <td style="font-weight: 600;"><t t-esc="pmt.get('name', '')"/></td>
+                                                <td><t t-esc="pmt.get('date', '')"/></td>
+                                                <t t-if="report_currency == 'both'">
+                                                    <td><t t-esc="pmt.get('currency', '')"/></td>
+                                                </t>
+                                                <td class="som-num" style="font-weight: 700; color: #0b6e38;">
+                                                    $<t t-esc="'{:,.2f}'.format(pmt.get('amount', 0))"/>
                                                 </td>
                                             </tr>
-                                        </tfoot>
-                                    </table>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div style="padding: 3px 8px; border: 1px solid #d8d8d8; font-size: 8px; font-style: italic; color: #7a6a3a; background: #fffbeb;">
+                                    Sin pagos registrados para esta orden.
                                 </div>
                             </t>
 
-                            <!-- TOTALES DE LA ORDEN -->
+                            <!-- CIERRE DE LA ORDEN: totales + saldo, juntos y sin partirse -->
                             <t t-set="totals_currency" t-value="od.get('currency', '') if report_currency == 'both' else ('MXN' if report_currency == 'mxn' else 'USD')"/>
                             <t t-if="report_currency == 'mxn'">
                                 <t t-set="od_untaxed" t-value="od.get('amount_untaxed', 0) if od.get('currency') == 'MXN' else od.get('amount_untaxed', 0) * banorte_rate"/>
                                 <t t-set="od_tax" t-value="od.get('amount_tax', 0) if od.get('currency') == 'MXN' else od.get('amount_tax', 0) * banorte_rate"/>
                                 <t t-set="od_total" t-value="od.get('total_mxn', 0)"/>
+                                <t t-set="tp_display" t-value="od.get('total_paid', 0) * banorte_rate if od.get('currency') == 'USD' and banorte_rate &gt; 0 else od.get('total_paid', 0)"/>
                             </t>
                             <t t-elif="report_currency == 'usd'">
-                                <t t-set="od_untaxed" t-value="od.get('amount_untaxed', 0) if od.get('currency') == 'USD' else (od.get('amount_untaxed', 0) / banorte_rate if banorte_rate > 0 else 0)"/>
-                                <t t-set="od_tax" t-value="od.get('amount_tax', 0) if od.get('currency') == 'USD' else (od.get('amount_tax', 0) / banorte_rate if banorte_rate > 0 else 0)"/>
+                                <t t-set="od_untaxed" t-value="od.get('amount_untaxed', 0) if od.get('currency') == 'USD' else (od.get('amount_untaxed', 0) / banorte_rate if banorte_rate &gt; 0 else 0)"/>
+                                <t t-set="od_tax" t-value="od.get('amount_tax', 0) if od.get('currency') == 'USD' else (od.get('amount_tax', 0) / banorte_rate if banorte_rate &gt; 0 else 0)"/>
                                 <t t-set="od_total" t-value="od.get('total_usd', 0)"/>
+                                <t t-set="tp_display" t-value="od.get('total_paid', 0) / banorte_rate if od.get('currency') == 'MXN' and banorte_rate &gt; 0 else od.get('total_paid', 0)"/>
                             </t>
                             <t t-else="">
                                 <t t-set="od_untaxed" t-value="od.get('amount_untaxed', 0)"/>
                                 <t t-set="od_tax" t-value="od.get('amount_tax', 0)"/>
                                 <t t-set="od_total" t-value="od.get('amount_total', 0)"/>
+                                <t t-set="tp_display" t-value="od.get('total_paid', 0)"/>
                             </t>
-                            <div class="row mt-2">
-                                <div class="col-6"></div>
-                                <div class="col-6">
-                                    <table class="som-totals">
-                                        <t t-if="show_original and od.get('has_original_diff')">
-                                            <t t-set="od_factor" t-value="(banorte_rate if (report_currency == 'mxn' and od.get('currency') == 'USD') else (1.0 / banorte_rate if (report_currency == 'usd' and od.get('currency') == 'MXN' and banorte_rate &gt; 0) else 1.0))"/>
-                                            <tr>
-                                                <td class="som-totals-label" style="color: #555;">Subtotal solicitud original</td>
-                                                <td class="som-totals-value" style="width: 35%; color: #555;">$<t t-esc="'{:,.2f}'.format(od.get('amount_untaxed_original', 0) * od_factor)"/> <span style="font-size: 8px;"><t t-esc="totals_currency"/></span></td>
-                                            </tr>
-                                            <t t-set="od_diff_val" t-value="od.get('amount_untaxed_diff', 0) * od_factor"/>
-                                            <tr>
-                                                <td class="som-totals-label" style="color: #555;">Diferencia por ajuste</td>
-                                                <td class="som-totals-value" t-attf-style="color: {{ '#0b6e38' if od_diff_val &gt; 0.005 else '#b91c1c' if od_diff_val &lt; -0.005 else '#555' }};">
-                                                    <t t-esc="('+' if od_diff_val &gt; 0.005 else '') + '${:,.2f}'.format(od_diff_val)"/>
-                                                </td>
-                                            </tr>
-                                        </t>
-                                        <tr>
-                                            <td class="som-totals-label">Subtotal</td>
-                                            <td class="som-totals-value" style="width: 35%;">$<t t-esc="'{:,.2f}'.format(od_untaxed)"/> <span style="font-size: 8px;"><t t-esc="totals_currency"/></span></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="som-totals-label">IVA</td>
-                                            <td class="som-totals-value" style="color: #555;">$<t t-esc="'{:,.2f}'.format(od_tax)"/></td>
-                                        </tr>
-                                        <tr class="som-grand">
-                                            <td class="som-totals-label">Total</td>
-                                            <td class="som-totals-value">$<t t-esc="'{:,.2f}'.format(od_total)"/> <t t-esc="totals_currency"/></td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
 
-                            <!-- PAGOS RELACIONADOS -->
-                            <div style="margin-top: 16px;">
-                                <div class="som-section-title">Pagos Registrados</div>
-                                <t t-if="od.get('payments')">
-                                    <table class="som-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Folio de Pago</th>
-                                                <th>Fecha</th>
-                                                <t t-if="report_currency == 'both'">
-                                                    <th>Moneda</th>
-                                                </t>
-                                                <th class="som-num">Monto Pagado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <t t-foreach="od.get('payments', [])" t-as="pmt">
+                            <div class="st-close">
+                                <div class="row" style="margin-top: 4px;">
+                                    <div class="col-6"></div>
+                                    <div class="col-6">
+                                        <table class="som-totals">
+                                            <t t-if="show_original and od.get('has_original_diff')">
+                                                <t t-set="od_factor" t-value="(banorte_rate if (report_currency == 'mxn' and od.get('currency') == 'USD') else (1.0 / banorte_rate if (report_currency == 'usd' and od.get('currency') == 'MXN' and banorte_rate &gt; 0) else 1.0))"/>
                                                 <tr>
-                                                    <td style="font-weight: 600;"><t t-esc="pmt.get('name', '')"/></td>
-                                                    <td><t t-esc="pmt.get('date', '')"/></td>
-                                                    <t t-if="report_currency == 'both'">
-                                                        <td><t t-esc="pmt.get('currency', '')"/></td>
-                                                    </t>
-                                                    <td class="som-num" style="font-weight: 700; color: #28a745;">
-                                                        $<t t-esc="'{:,.2f}'.format(pmt.get('amount', 0))"/>
+                                                    <td class="som-totals-label" style="color: #555;">Subtotal solicitud original</td>
+                                                    <td class="som-totals-value" style="width: 35%; color: #555;">$<t t-esc="'{:,.2f}'.format(od.get('amount_untaxed_original', 0) * od_factor)"/></td>
+                                                </tr>
+                                                <t t-set="od_diff_val" t-value="od.get('amount_untaxed_diff', 0) * od_factor"/>
+                                                <tr>
+                                                    <td class="som-totals-label" style="color: #555;">Diferencia por ajuste</td>
+                                                    <td class="som-totals-value" t-attf-style="color: {{ '#0b6e38' if od_diff_val &gt; 0.005 else '#b91c1c' if od_diff_val &lt; -0.005 else '#555' }};">
+                                                        <t t-esc="('+' if od_diff_val &gt; 0.005 else '') + '${:,.2f}'.format(od_diff_val)"/>
                                                     </td>
                                                 </tr>
                                             </t>
-                                        </tbody>
-                                        <tfoot>
-                                            <t t-if="report_currency == 'mxn'">
-                                                <t t-set="tp_display" t-value="od.get('total_paid', 0) * banorte_rate if od.get('currency') == 'USD' and banorte_rate > 0 else od.get('total_paid', 0)"/>
-                                            </t>
-                                            <t t-elif="report_currency == 'usd'">
-                                                <t t-set="tp_display" t-value="od.get('total_paid', 0) / banorte_rate if od.get('currency') == 'MXN' and banorte_rate > 0 else od.get('total_paid', 0)"/>
-                                            </t>
-                                            <t t-else="">
-                                                <t t-set="tp_display" t-value="od.get('total_paid', 0)"/>
-                                            </t>
-                                            <tr style="background-color: #f2f2f2; border-top: 2px solid #2f2f2f;">
-                                                <td t-att-colspan="3 if report_currency == 'both' else 2" class="som-upper" style="padding: 6px 8px; font-weight: 800;">Total pagado</td>
-                                                <td class="som-num" style="padding: 6px 8px; font-weight: 800; color: #28a745; font-size: 10.5px;">
-                                                    $<t t-esc="'{:,.2f}'.format(tp_display)"/> <t t-esc="totals_currency"/>
-                                                </td>
+                                            <tr>
+                                                <td class="som-totals-label">Subtotal</td>
+                                                <td class="som-totals-value" style="width: 35%;">$<t t-esc="'{:,.2f}'.format(od_untaxed)"/></td>
                                             </tr>
-                                        </tfoot>
-                                    </table>
-                                </t>
-                                <t t-else="">
-                                    <div style="padding: 10px; background: #fff3cd; font-size: 11px; font-style: italic; text-align: center;">
-                                        No se han registrado pagos para esta orden.
+                                            <tr>
+                                                <td class="som-totals-label">IVA</td>
+                                                <td class="som-totals-value" style="color: #555;">$<t t-esc="'{:,.2f}'.format(od_tax)"/></td>
+                                            </tr>
+                                            <tr class="som-grand">
+                                                <td class="som-totals-label">Total</td>
+                                                <td class="som-totals-value">$<t t-esc="'{:,.2f}'.format(od_total)"/> <t t-esc="totals_currency"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="som-totals-label" style="color: #0b6e38;">Pagado</td>
+                                                <td class="som-totals-value" style="color: #0b6e38;">$<t t-esc="'{:,.2f}'.format(tp_display)"/> <t t-esc="totals_currency"/></td>
+                                            </tr>
+                                        </table>
                                     </div>
-                                </t>
-                            </div>
-
-                            <!-- SALDO DE ESTA ORDEN (pendiente o a favor) -->
-                            <t t-set="od_balance" t-value="od.get('balance', 0)"/>
-                            <t t-set="has_balance" t-value="od_balance &gt; 0.01"/>
-                            <t t-set="has_credit" t-value="od_balance &lt; -0.01"/>
-                            <t t-set="bal_color" t-value="'#28a745' if has_credit else ('#c00' if has_balance else '#999')"/>
-                            <t t-set="bal_bg" t-value="'#f0fdf4' if has_credit else ('#fff5f5' if has_balance else '#f5f5f5')"/>
-                            <t t-set="bal_label" t-value="'Saldo a Favor' if has_credit else 'Saldo Pendiente'"/>
-                            <div t-attf-style="margin-top: 16px; border: 3px solid {{ bal_color }}; border-radius: 6px; overflow: hidden;">
-                                <div t-attf-style="background-color: {{ bal_color }}; color: #fff; padding: 6px 12px;">
-                                    <strong style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
-                                        <t t-esc="bal_label"/> — <t t-esc="od.get('order_name', '')"/>
-                                    </strong>
                                 </div>
 
-                                <t t-if="report_currency == 'mxn'">
-                                    <div t-attf-style="padding: 16px; text-align: center; background: {{ bal_bg }};">
-                                        <div t-attf-style="font-size: 28px; font-weight: 900; color: {{ bal_color }};">
-                                            $<t t-esc="'{:,.2f}'.format(abs(od.get('balance_mxn', 0)))"/> MXN
-                                        </div>
-                                    </div>
-                                </t>
-                                <t t-elif="report_currency == 'usd'">
-                                    <div t-attf-style="padding: 16px; text-align: center; background: {{ bal_bg }};">
-                                        <div t-attf-style="font-size: 28px; font-weight: 900; color: {{ bal_color }};">
-                                            $<t t-esc="'{:,.2f}'.format(abs(od.get('balance_usd', 0)))"/> USD
-                                        </div>
-                                    </div>
-                                </t>
-                                <t t-else="">
-                                    <div class="row" t-attf-style="padding: 12px 16px; background: {{ bal_bg }};">
-                                        <div class="col-6 text-center">
-                                            <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Dólares</div>
-                                            <div t-attf-style="font-size: 22px; font-weight: 900; color: {{ bal_color }};">
-                                                $<t t-esc="'{:,.2f}'.format(abs(od.get('balance_usd', 0)))"/> USD
-                                            </div>
-                                        </div>
-                                        <div class="col-6 text-center">
-                                            <div style="font-size: 10px; color: #888; text-transform: uppercase;">Saldo en Pesos</div>
-                                            <div t-attf-style="font-size: 22px; font-weight: 900; color: {{ bal_color }};">
-                                                $<t t-esc="'{:,.2f}'.format(abs(od.get('balance_mxn', 0)))"/> MXN
-                                            </div>
-                                        </div>
-                                    </div>
-                                </t>
+                                <!-- El veredicto de la orden. Liquidada NO se imprime como
+                                     "Saldo Pendiente $0.00": eso se lee como si aún debiera. -->
+                                <t t-set="od_balance" t-value="od.get('balance', 0)"/>
+                                <t t-set="has_credit" t-value="od_balance &lt; -0.01"/>
+                                <t t-set="has_due" t-value="od_balance &gt; 0.01"/>
+                                <t t-set="bal_color" t-value="'#0b6e38' if has_credit else ('#b91c1c' if has_due else '#0b6e38')"/>
+                                <t t-set="bal_bg" t-value="'#f0fdf4' if has_credit else ('#fef2f2' if has_due else '#f0fdf4')"/>
+                                <t t-set="bal_label" t-value="'Saldo a favor' if has_credit else ('Saldo pendiente' if has_due else 'Liquidada')"/>
+                                <table class="st-bal">
+                                    <tr>
+                                        <td t-attf-style="background: {{ bal_bg }}; border-color: {{ bal_color }};">
+                                            <span class="st-bl" t-attf-style="color: {{ bal_color }};">
+                                                <t t-esc="bal_label"/> — <t t-esc="od.get('order_name', '')"/>
+                                            </span>
+                                        </td>
+                                        <td t-attf-style="background: {{ bal_bg }}; border-color: {{ bal_color }}; width: 42%;"
+                                            class="st-bv">
+                                            <t t-if="not has_credit and not has_due">
+                                                <span t-attf-style="color: {{ bal_color }}; letter-spacing: 1.5px;">PAGADA</span>
+                                            </t>
+                                            <t t-elif="report_currency == 'mxn'">
+                                                <span t-attf-style="color: {{ bal_color }};">$<t t-esc="'{:,.2f}'.format(abs(od.get('balance_mxn', 0)))"/> MXN</span>
+                                            </t>
+                                            <t t-elif="report_currency == 'usd'">
+                                                <span t-attf-style="color: {{ bal_color }};">$<t t-esc="'{:,.2f}'.format(abs(od.get('balance_usd', 0)))"/> USD</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span t-attf-style="color: {{ bal_color }};">$<t t-esc="'{:,.2f}'.format(abs(od.get('balance_usd', 0)))"/> USD</span>
+                                                <span style="color: #94a3b8; font-weight: 400;"> · </span>
+                                                <span t-attf-style="color: {{ bal_color }};">$<t t-esc="'{:,.2f}'.format(abs(od.get('balance_mxn', 0)))"/> MXN</span>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
 
                         </t>
                         <!-- FIN DEL LOOP DE ÓRDENES -->
 
-                        <!-- DISCLAIMER -->
-                        <div style="border: 1px solid #ccc; padding: 12px 16px; background-color: #fafafa; margin-top: 20px;">
-                            <strong style="font-size: 11px; display: block; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 4px; text-transform: uppercase;">Aviso Importante — Términos y Condiciones</strong>
-                            <div style="font-size: 9px; text-align: justify; color: #333; line-height: 1.4;">
-                                <p style="margin-bottom: 4px;"><strong>1. VALIDEZ:</strong> Este estado de cuenta refleja los saldos al momento de su emisión. Los montos pueden variar si existen pagos o ajustes posteriores a la fecha de generación del documento.</p>
-                                <t t-if="report_currency == 'both'">
-                                    <p style="margin-bottom: 4px;"><strong>2. TIPO DE CAMBIO:</strong> Las conversiones entre USD y MXN se realizan utilizando el tipo de cambio de venta publicado por Banorte vigente al día de emisión de este documento. Este tipo de cambio es referencial y puede diferir del aplicado en transacciones bancarias individuales.</p>
-                                </t>
-                                <p style="margin-bottom: 4px;"><strong><t t-if="report_currency == 'both'">3</t><t t-else="">2</t>. PAGOS:</strong> Los pagos reflejados son aquellos que han sido registrados y conciliados en nuestro sistema al momento de la generación de este documento. Pagos en tránsito o no conciliados podrían no aparecer reflejados.</p>
-                                <p style="margin-bottom: 4px;"><strong><t t-if="report_currency == 'both'">4</t><t t-else="">3</t>. ENTREGAS Y DEVOLUCIONES:</strong> Las cantidades entregadas y devueltas corresponden a documentos operativos confirmados y transferencias validadas en almacén. Movimientos parciales en proceso podrían no estar reflejados en su totalidad.</p>
-                                <p style="margin-bottom: 0;"><strong><t t-if="report_currency == 'both'">5</t><t t-else="">4</t>. DISCREPANCIAS:</strong> En caso de encontrar alguna discrepancia en este estado de cuenta, favor de comunicarse con su ejecutivo de ventas asignado en un plazo no mayor a 5 días hábiles a partir de la recepción de este documento.</p>
+                        <!-- ══════════ AVISO + FIRMAS ══════════ -->
+                        <div style="border: 1px solid #d8d8d8; padding: 6px 8px; margin-top: 10px; page-break-inside: avoid;">
+                            <div style="font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #155f94; margin-bottom: 3px;">
+                                Aviso importante — términos y condiciones
+                            </div>
+                            <div class="st-note">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <p><strong>1. Validez:</strong> refleja los saldos al momento de su emisión. Los montos pueden variar si existen pagos o ajustes posteriores.</p>
+                                        <t t-if="report_currency == 'both'">
+                                            <p><strong>2. Tipo de cambio:</strong> las conversiones USD/MXN usan el tipo de cambio de venta de Banorte vigente al día de emisión. Es referencial y puede diferir del aplicado en cada operación bancaria.</p>
+                                        </t>
+                                        <p><strong><t t-if="report_currency == 'both'">3</t><t t-else="">2</t>. Pagos:</strong> se reflejan los pagos registrados y conciliados en el sistema. Pagos en tránsito o no conciliados podrían no aparecer.</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong><t t-if="report_currency == 'both'">4</t><t t-else="">3</t>. Entregas y devoluciones:</strong> corresponden a documentos operativos confirmados y transferencias validadas en almacén. Movimientos parciales en proceso podrían no estar reflejados en su totalidad.</p>
+                                        <p><strong><t t-if="report_currency == 'both'">5</t><t t-else="">4</t>. Discrepancias:</strong> en caso de encontrar alguna, comuníquese con su ejecutivo de ventas asignado en un plazo no mayor a 5 días hábiles a partir de la recepción de este documento.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- FIRMAS -->
-                        <div style="margin-top: 50px; page-break-inside: avoid;">
-                            <div class="row" style="margin-top: 40px;">
-                                <div class="col-1"></div>
-                                <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">ELABORÓ</strong>
-                                    </div>
-                                </div>
-                                <div class="col-2"></div>
-                                <div class="col-4 text-center">
-                                    <div style="border-top: 1px solid #000; padding-top: 5px;">
-                                        <strong style="font-size: 9px; text-transform: uppercase;">RECIBIÓ</strong>
-                                    </div>
-                                </div>
-                                <div class="col-1"></div>
-                            </div>
-                        </div>
+                        <table class="st-sign">
+                            <tr>
+                                <td style="width: 8%;"></td>
+                                <td style="width: 34%;"><div class="st-line">Elaboró</div></td>
+                                <td style="width: 16%;"></td>
+                                <td style="width: 34%;"><div class="st-line">Recibió</div></td>
+                                <td style="width: 8%;"></td>
+                            </tr>
+                        </table>
 
                     </div>
                 </t>
