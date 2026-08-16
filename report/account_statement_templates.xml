@@ -48,8 +48,8 @@
                                nunca aplicó — la regla queda de todos modos por
                                si alguien agrega una tabla con clase Bootstrap.) */
                             .st-page table td, .st-page table th {
-                                padding: 0.5px 4px !important;
-                                line-height: 1.05 !important;  /* 1.0 recorta acentos y descendentes en wkhtmltopdf */
+                                padding: 1.2px 4px !important;
+                                line-height: 1.15 !important;  /* 1.0 recorta acentos y descendentes en wkhtmltopdf */
                                 vertical-align: middle !important;
                                 height: auto !important;
                             }
@@ -61,14 +61,14 @@
                                 line-height: inherit !important;
                             }
                             .st-page .table > :not(caption) > * > * {
-                                padding: 0.5px 4px !important;
+                                padding: 1.2px 4px !important;
                             }
                             .st-page tr { height: auto !important; }
 
                             .st-page { font-size: 8px; color: #222; }
 
                             .st-head { border-bottom: 1.5px solid #111;
-                                       padding-bottom: 2px; margin-bottom: 3px; }
+                                       padding-bottom: 3px; margin-bottom: 5px; }
                             .st-title { font-size: 12.5px; font-weight: 800;
                                         letter-spacing: 1px; color: #111;
                                         text-transform: uppercase; margin: 0;
@@ -82,9 +82,9 @@
 
                             /* Tiras de datos: tabla, no flex — wkhtmltopdf */
                             .st-strip { width: 100%; border-collapse: collapse;
-                                        margin-bottom: 3px; table-layout: fixed; }
+                                        margin-bottom: 5px; table-layout: fixed; }
                             .st-page .st-strip td { border: 1px solid #d8d8d8;
-                                           padding: 1.5px 5px !important;
+                                           padding: 2.5px 5px !important;
                                            vertical-align: middle !important; }
                             .st-k { display: block; font-size: 6.5px;
                                     text-transform: uppercase; letter-spacing: .4px;
@@ -100,9 +100,9 @@
 
                             /* Banda de orden */
                             .st-obar { width: 100%; border-collapse: collapse;
-                                       margin: 3px 0 1px; table-layout: fixed; }
+                                       margin: 5px 0 2px; table-layout: fixed; }
                             .st-page .st-obar td { background-color: #2f2f2f; color: #fff;
-                                          padding: 1.5px 6px !important; font-size: 8px; }
+                                          padding: 2.5px 6px !important; font-size: 8px; }
                             .st-obar .st-oname { font-weight: 800; font-size: 9px;
                                                  text-transform: uppercase;
                                                  letter-spacing: .5px; }
@@ -112,24 +112,24 @@
                             /* Tablas de datos: al piso legible */
                             .st-page .som-table { font-size: 7.5px; }
                             .st-page .som-table th { font-size: 7px;
-                                                     padding: 1px 4px !important; }
+                                                     padding: 1.8px 4px !important; }
 
-                            .st-page .som-section-title { padding: 1px 5px;
+                            .st-page .som-section-title { padding: 2px 5px;
                                                           font-size: 7.5px;
                                                           line-height: 1.1;
-                                                          margin: 1px 0 0; }
+                                                          margin: 3px 0 1px; }
 
                             /* Totales: era lo más alto después de las tablas */
                             .st-page .som-totals { font-size: 8px; }
-                            .st-page .som-totals td { padding: 0.5px 6px !important; }
+                            .st-page .som-totals td { padding: 1.2px 6px !important; }
                             .st-page .som-totals .som-grand td { font-size: 9px;
-                                                                 padding-top: 1.5px !important; }
+                                                                 padding-top: 3px !important; }
 
                             /* Cierre de orden: totales + saldo no se parten */
                             .st-close { page-break-inside: avoid; }
                             .st-bal { width: 100%; border-collapse: collapse;
-                                      margin-top: 1.5px; table-layout: fixed; }
-                            .st-page .st-bal td { padding: 2px 6px !important;
+                                      margin-top: 3px; table-layout: fixed; }
+                            .st-page .st-bal td { padding: 3px 6px !important;
                                          border: 1px solid #d8d8d8; }
                             .st-bal .st-bl { font-size: 8px; font-weight: 800;
                                              text-transform: uppercase;
@@ -171,7 +171,11 @@
                             </div>
                         </div>
 
-                        <!-- Identidad del cliente: una tira, no media hoja -->
+                        <!-- Identidad del cliente: una tira, no media hoja.
+                             La DIVISA sale de las órdenes, no del filtro del
+                             wizard: es el dato que el cliente necesita para
+                             saber en qué se le está cobrando. -->
+                        <t t-set="order_currencies" t-value="', '.join(sorted(set([o.get('currency', '') for o in orders_data if o.get('currency')])))"/>
                         <table class="st-strip">
                             <tr>
                                 <td style="width: 46%;">
@@ -187,8 +191,8 @@
                                     <span class="st-v-sm"><t t-esc="project_name or '—'"/></span>
                                 </td>
                                 <td style="width: 12%;" class="text-center">
-                                    <span class="st-k">Órdenes</span>
-                                    <span class="st-v"><t t-esc="total_orders"/></span>
+                                    <span class="st-k">Divisa</span>
+                                    <span class="st-v"><t t-esc="order_currencies or '—'"/></span>
                                 </td>
                             </tr>
                         </table>
@@ -228,14 +232,10 @@
                                         <span class="st-v" t-attf-style="color: {{ '#0b6e38' if net_credit else '#b91c1c' }};">$<t t-esc="'{:,.2f}'.format(abs(net_bal))"/> <t t-esc="cur_label"/></span>
                                     </td>
                                 </t>
-                                <td>
-                                    <span class="st-k">Órdenes USD / MXN</span>
-                                    <span class="st-v-sm"><t t-esc="orders_usd_count"/> · <t t-esc="orders_mxn_count"/></span>
-                                </td>
                             </tr>
                             <t t-if="has_customer_credit">
                                 <tr>
-                                    <td t-att-colspan="5 if report_currency == 'both' else 4"
+                                    <td t-att-colspan="4 if report_currency == 'both' else 3"
                                         style="background: #fafafa; text-align: left;">
                                         <span class="st-k" style="color: #2f2f2f;">Saldo a favor del cliente — considerando todas sus órdenes</span>
                                         <span class="st-v" style="color: #0b6e38;">
