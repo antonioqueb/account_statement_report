@@ -38,80 +38,116 @@
                         <t t-call="stock_lot_dimensions.som_report_style"/>
 
                         <style type="text/css">
-                            .st-page { font-size: 9px; color: #222; }
+                            /* ═══ BLINDAJE DE ALTURA ═══
+                               Con !important para que NADA heredado gane:
+                               ni Bootstrap, ni el line-height 1.5 del layout
+                               base, ni los márgenes de p / div que Odoo mete
+                               cuando un campo se pinta con t-field.
+                               (En este reporte las tablas usan .som-table, no
+                               .table, así que el padding 0.5rem de Bootstrap
+                               nunca aplicó — la regla queda de todos modos por
+                               si alguien agrega una tabla con clase Bootstrap.) */
+                            .st-page table td, .st-page table th {
+                                padding: 0.5px 4px !important;
+                                line-height: 1.05 !important;  /* 1.0 recorta acentos y descendentes en wkhtmltopdf */
+                                vertical-align: middle !important;
+                                height: auto !important;
+                            }
+                            .st-page table td p, .st-page table td div,
+                            .st-page table td ul, .st-page table td li,
+                            .st-page table th p, .st-page table th div {
+                                margin: 0 !important;
+                                padding: 0 !important;
+                                line-height: inherit !important;
+                            }
+                            .st-page .table > :not(caption) > * > * {
+                                padding: 0.5px 4px !important;
+                            }
+                            .st-page tr { height: auto !important; }
 
-                            .st-head { border-bottom: 2px solid #111;
-                                       padding-bottom: 5px; margin-bottom: 7px; }
-                            .st-title { font-size: 15px; font-weight: 800;
-                                        letter-spacing: 1.2px; color: #111;
-                                        text-transform: uppercase; margin: 0; }
-                            .st-flag { font-size: 7.5px; font-weight: 700;
+                            .st-page { font-size: 8px; color: #222; }
+
+                            .st-head { border-bottom: 1.5px solid #111;
+                                       padding-bottom: 2px; margin-bottom: 3px; }
+                            .st-title { font-size: 12.5px; font-weight: 800;
+                                        letter-spacing: 1px; color: #111;
+                                        text-transform: uppercase; margin: 0;
+                                        line-height: 1.1; }
+                            .st-flag { font-size: 7px; font-weight: 700;
                                        color: #555; text-transform: uppercase;
                                        letter-spacing: .4px; }
-                            .st-meta { font-size: 8px; color: #555;
-                                       line-height: 1.35; }
+                            .st-meta { font-size: 7.5px; color: #555;
+                                       line-height: 1.2; }
                             .st-meta strong { color: #222; }
 
                             /* Tiras de datos: tabla, no flex — wkhtmltopdf */
                             .st-strip { width: 100%; border-collapse: collapse;
-                                        margin-bottom: 6px; table-layout: fixed; }
-                            .st-strip td { border: 1px solid #d8d8d8;
-                                           padding: 3px 7px; vertical-align: top; }
-                            .st-k { display: block; font-size: 7px;
+                                        margin-bottom: 3px; table-layout: fixed; }
+                            .st-page .st-strip td { border: 1px solid #d8d8d8;
+                                           padding: 1.5px 5px !important;
+                                           vertical-align: middle !important; }
+                            .st-k { display: block; font-size: 6.5px;
                                     text-transform: uppercase; letter-spacing: .4px;
-                                    color: #666; }
-                            .st-v { font-size: 10px; font-weight: 700; color: #111; }
-                            .st-v-sm { font-size: 8.5px; font-weight: 600; color: #111; }
+                                    color: #666; line-height: 1.15; }
+                            .st-v { font-size: 9px; font-weight: 700; color: #111;
+                                    line-height: 1.15; }
+                            .st-v-sm { font-size: 8px; font-weight: 600; color: #111;
+                                       line-height: 1.15; }
 
-                            .st-tot td { border: 1px solid #2f2f2f; text-align: center; }
+                            .st-page .st-tot td { border: 1px solid #2f2f2f; text-align: center; }
                             .st-tot .st-k { color: #2f2f2f; font-weight: 700; }
-                            .st-tot .st-v { font-size: 11.5px; }
+                            .st-tot .st-v { font-size: 10px; }
 
                             /* Banda de orden */
                             .st-obar { width: 100%; border-collapse: collapse;
-                                       margin: 6px 0 2px; table-layout: fixed; }
-                            .st-obar td { background-color: #2f2f2f; color: #fff;
-                                          padding: 3px 8px; font-size: 9px; }
-                            .st-obar .st-oname { font-weight: 800; font-size: 10px;
+                                       margin: 3px 0 1px; table-layout: fixed; }
+                            .st-page .st-obar td { background-color: #2f2f2f; color: #fff;
+                                          padding: 1.5px 6px !important; font-size: 8px; }
+                            .st-obar .st-oname { font-weight: 800; font-size: 9px;
                                                  text-transform: uppercase;
-                                                 letter-spacing: .6px; }
+                                                 letter-spacing: .5px; }
                             .st-obar .st-osub { text-align: right; color: #c9c9c9;
-                                                font-size: 8px; }
+                                                font-size: 7.5px; }
 
-                            /* Tablas: más apretadas que la base del sistema */
-                            .st-page .som-table { font-size: 8px; }
-                            .st-page .som-table th { padding: 1.5px 4px; font-size: 7.5px;
-                                                     line-height: 1.05; }
-                            .st-page .som-table td { padding: 1px 4px; line-height: 1.05;
-                                                     vertical-align: middle; }
-                            .st-page .som-section-title { padding: 2px 6px; font-size: 8.5px;
-                                                          margin: 2px 0 1px; }
-                            .st-page .som-totals { font-size: 8.5px; }
-                            .st-page .som-totals td { padding: 1.5px 6px; }
-                            .st-page .som-totals .som-grand td { font-size: 10px;
-                                                                 padding-top: 3px; }
+                            /* Tablas de datos: al piso legible */
+                            .st-page .som-table { font-size: 7.5px; }
+                            .st-page .som-table th { font-size: 7px;
+                                                     padding: 1px 4px !important; }
+
+                            .st-page .som-section-title { padding: 1px 5px;
+                                                          font-size: 7.5px;
+                                                          line-height: 1.1;
+                                                          margin: 1px 0 0; }
+
+                            /* Totales: era lo más alto después de las tablas */
+                            .st-page .som-totals { font-size: 8px; }
+                            .st-page .som-totals td { padding: 0.5px 6px !important; }
+                            .st-page .som-totals .som-grand td { font-size: 9px;
+                                                                 padding-top: 1.5px !important; }
 
                             /* Cierre de orden: totales + saldo no se parten */
                             .st-close { page-break-inside: avoid; }
                             .st-bal { width: 100%; border-collapse: collapse;
-                                      margin-top: 4px; table-layout: fixed; }
-                            .st-bal td { padding: 4px 8px; border: 1px solid #d8d8d8; }
-                            .st-bal .st-bl { font-size: 8.5px; font-weight: 800;
+                                      margin-top: 1.5px; table-layout: fixed; }
+                            .st-page .st-bal td { padding: 2px 6px !important;
+                                         border: 1px solid #d8d8d8; }
+                            .st-bal .st-bl { font-size: 8px; font-weight: 800;
                                              text-transform: uppercase;
-                                             letter-spacing: .6px; }
-                            .st-bal .st-bv { text-align: right; font-size: 13px;
+                                             letter-spacing: .5px; }
+                            .st-bal .st-bv { text-align: right; font-size: 10.5px;
                                              font-weight: 900; white-space: nowrap; }
 
-                            .st-note { font-size: 7.5px; color: #333; line-height: 1.35;
+                            .st-note { font-size: 6.5px; color: #333; line-height: 1.2;
                                        text-align: justify; }
-                            .st-note p { margin: 0 0 2px 0; }
+                            .st-note p { margin: 0 0 1px 0 !important; }
                             .st-sign { width: 100%; border-collapse: collapse;
-                                       margin-top: 26px; page-break-inside: avoid; }
-                            .st-sign td { padding-top: 20px; text-align: center;
-                                          font-size: 8px; font-weight: 700;
-                                          text-transform: uppercase; letter-spacing: .5px; }
+                                       margin-top: 12px; page-break-inside: avoid; }
+                            .st-page .st-sign td { padding-top: 10px !important;
+                                          text-align: center; font-size: 7.5px;
+                                          font-weight: 700; text-transform: uppercase;
+                                          letter-spacing: .5px; }
                             .st-sign .st-line { border-top: 1px solid #000;
-                                                padding-top: 3px; }
+                                                padding-top: 2px !important; }
                         </style>
 
                         <!-- ══════════ ENCABEZADO (una sola vez) ══════════ -->
@@ -550,8 +586,8 @@
                         <!-- FIN DEL LOOP DE ÓRDENES -->
 
                         <!-- ══════════ AVISO + FIRMAS ══════════ -->
-                        <div style="border: 1px solid #d8d8d8; padding: 6px 8px; margin-top: 10px; page-break-inside: avoid;">
-                            <div style="font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #2f2f2f; margin-bottom: 3px;">
+                        <div style="border: 1px solid #d8d8d8; padding: 3px 6px; margin-top: 5px; page-break-inside: avoid;">
+                            <div style="font-size: 7px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #2f2f2f; margin-bottom: 1px;">
                                 Aviso importante — términos y condiciones
                             </div>
                             <div class="st-note">
