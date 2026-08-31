@@ -26,8 +26,9 @@ class SaleOrder(models.Model):
         compute='_compute_customer_credit_balance',
     )
 
-    def _statement_banorte_rate(self):
-        """Tipo de cambio Banorte, idéntico al usado por el wizard/reporte."""
+    def _statement_banorte_rate(self, company=None):
+        """Tipo de cambio Banorte, idéntico al usado por el wizard/reporte.
+        El respaldo (tasa oficial) se lee con la compañía de la orden."""
         rate_param = self.env['ir.config_parameter'].sudo().get_param('banorte.last_rate', '0')
         try:
             rate = float(rate_param)
@@ -35,14 +36,15 @@ class SaleOrder(models.Model):
             rate = 0.0
 
         if rate <= 0:
+            company = company or self[:1].company_id or self.env.company
             usd = self.env.ref('base.USD', raise_if_not_found=False)
-            company_currency = self.env.company.currency_id
+            company_currency = company.currency_id
             if usd and company_currency and company_currency.name == 'MXN':
-                rate = usd._convert(1.0, company_currency, self.env.company, fields.Date.today())
+                rate = usd._convert(1.0, company_currency, company, fields.Date.today())
             elif usd and company_currency and company_currency.name == 'USD':
                 mxn = self.env.ref('base.MXN', raise_if_not_found=False)
                 if mxn:
-                    rate = mxn._convert(1.0, usd, self.env.company, fields.Date.today())
+                    rate = mxn._convert(1.0, usd, company, fields.Date.today())
                     rate = 1 / rate if rate > 0 else 0
         return rate
 
@@ -83,17 +85,23 @@ class SaleOrder(models.Model):
         'invoice_ids.line_ids.matched_credit_ids',
     )
     def _compute_customer_credit_balance(self):
-        banorte_rate = self._statement_banorte_rate()
+        rates = {}
         for order in self:
+            company = order.company_id or self.env.company
+            if company.id not in rates:
+                rates[company.id] = order._statement_banorte_rate(company)
+            banorte_rate = rates[company.id]
             partner = order.partner_id.commercial_partner_id or order.partner_id
             balance = 0.0
             if partner:
                 # Saldo global del cliente = suma del balance (en MXN) de TODAS
-                # sus órdenes confirmadas, con la misma lógica del reporte.
-                # Si el neto es negativo, hay saldo a favor.
+                # sus órdenes confirmadas EN ESTA COMPAÑÍA (sudo salta las
+                # reglas), con la misma lógica del reporte. Neto negativo =
+                # saldo a favor.
                 client_orders = self.env['sale.order'].sudo().search([
                     ('partner_id.commercial_partner_id', '=', partner.id),
                     ('state', 'in', ['sale', 'done']),
+                    ('company_id', '=', company.id),
                 ])
                 total_balance_mxn = 0.0
                 for o in client_orders:
@@ -144,6 +152,7 @@ class SaleOrder(models.Model):
 
         wizard = self.env['account.statement.wizard'].create({
             'partner_id': self.partner_id.id,
+            'company_id': (self.company_id or self.env.company).id,
             'order_ids': [(6, 0, [self.id])],
             'report_currency': report_currency,
             'include_fully_paid': True,

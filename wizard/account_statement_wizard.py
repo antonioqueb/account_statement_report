@@ -12,6 +12,10 @@ class AccountStatementWizard(models.TransientModel):
     _description = 'Wizard para Estado de Cuenta'
 
     partner_id = fields.Many2one('res.partner', string='Cliente', required=True)
+    # Compañía del estado de cuenta: acota órdenes/facturas y el branding del PDF.
+    company_id = fields.Many2one(
+        'res.company', string='Compañía', required=True,
+        default=lambda self: self.env.company)
     project_id = fields.Many2one('project.project', string='Proyecto (Filtro Opcional)')
     date_from = fields.Date(string='Desde', help='Filtrar órdenes desde esta fecha')
     date_to = fields.Date(string='Hasta', help='Filtrar órdenes hasta esta fecha')
@@ -62,7 +66,7 @@ class AccountStatementWizard(models.TransientModel):
         for rec in self:
             rec.exchange_rate = rate
 
-    @api.depends('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft')
+    @api.depends('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft', 'company_id')
     def _compute_available_orders(self):
         for rec in self:
             if rec.partner_id:
@@ -70,7 +74,7 @@ class AccountStatementWizard(models.TransientModel):
             else:
                 rec.available_order_ids = self.env['sale.order']
 
-    @api.depends('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft')
+    @api.depends('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft', 'company_id')
     def _compute_currency_detection(self):
         for rec in self:
             if rec.partner_id:
@@ -87,7 +91,7 @@ class AccountStatementWizard(models.TransientModel):
                 rec.detected_usd_count = 0
                 rec.detected_mxn_count = 0
 
-    @api.onchange('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft')
+    @api.onchange('partner_id', 'project_id', 'date_from', 'date_to', 'include_draft', 'company_id')
     def _onchange_filters(self):
         """Cuando cambian los filtros, resetear selección y auto-detectar divisa"""
         self.order_ids = False
@@ -107,14 +111,16 @@ class AccountStatementWizard(models.TransientModel):
             rate = 0.0
 
         if rate <= 0:
+            # Respaldo (tasa oficial) con la compañía del estado de cuenta.
+            company = self[:1].company_id or self.env.company
             usd = self.env.ref('base.USD', raise_if_not_found=False)
-            company_currency = self.env.company.currency_id
+            company_currency = company.currency_id
             if usd and company_currency and company_currency.name == 'MXN':
-                rate = usd._convert(1.0, company_currency, self.env.company, fields.Date.today())
+                rate = usd._convert(1.0, company_currency, company, fields.Date.today())
             elif usd and company_currency and company_currency.name == 'USD':
                 mxn = self.env.ref('base.MXN', raise_if_not_found=False)
                 if mxn:
-                    rate = mxn._convert(1.0, usd, self.env.company, fields.Date.today())
+                    rate = mxn._convert(1.0, usd, company, fields.Date.today())
                     rate = 1 / rate if rate > 0 else 0
 
         return rate
@@ -122,6 +128,8 @@ class AccountStatementWizard(models.TransientModel):
     def _get_base_domain(self):
         """Construye el dominio base según filtros del wizard"""
         domain = [('partner_id', '=', self.partner_id.id)]
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
 
         states = ['sale', 'done']
         if self.include_draft:
@@ -239,9 +247,11 @@ class AccountStatementWizard(models.TransientModel):
         # mostrarlo en TODOS los reportes aunque la(s) orden(es) incluida(s) no
         # tengan excedente. Usa la misma lógica de balance que el reporte.
         partner = self.partner_id.commercial_partner_id or self.partner_id
+        # sudo salta las reglas: acotar a la compañía del estado de cuenta.
         all_client_orders = self.env['sale.order'].sudo().search([
             ('partner_id.commercial_partner_id', '=', partner.id),
             ('state', 'in', ['sale', 'done']),
+            ('company_id', '=', (self.company_id or self.env.company).id),
         ])
         global_balance_mxn = 0.0
         for o in all_client_orders:

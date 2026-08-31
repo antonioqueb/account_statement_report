@@ -32,6 +32,9 @@
                                                options="{'no_create': True}"
                                                placeholder="Seleccione un cliente..."
                                                class="fw-bold"/>
+                                        <field name="company_id"
+                                               options="{'no_create': True}"
+                                               groups="base.group_multi_company"/>
                                         <field name="project_id"
                                                options="{'no_create': True}"
                                                optional="show"

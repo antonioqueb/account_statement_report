@@ -26,6 +26,8 @@ class AccountStatementReportParser(models.AbstractModel):
             'doc_ids': [wizard_id] if wizard_id else docids,
             'doc_model': 'account.statement.wizard',
             'docs': wizard,
+            # Branding del layout = compañía del estado de cuenta (no la activa).
+            'company': wizard[:1].company_id or self.env.company,
             'data': report_data,
             'banorte_rate': report_data.get('banorte_rate', 0),
             'orders_data': report_data.get('orders_data', []),
