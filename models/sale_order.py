@@ -48,6 +48,28 @@ class SaleOrder(models.Model):
                     rate = 1 / rate if rate > 0 else 0
         return rate
 
+    def _statement_reconciled_entries(self, inv):
+        """Abonos realmente APLICADOS a la factura: nombre, fecha y MONTO
+        CONCILIADO (partial reconcile), en la moneda de la factura.
+
+        Un pago repartido entre varias facturas solo aporta aqui la porcion
+        aplicada a ESTA factura. Sumar payment.amount completo (logica
+        anterior) contaba el mismo pago entero en cada factura que tocaba y
+        fabricaba saldos a favor fantasma (caso CG WORKS: pago de 323,260
+        aplicado 318,554.01 a V/134 y 4,705.99 a V/541, contado dos veces
+        completo => saldo a favor inexistente de 272,948.95)."""
+        entries = []
+        recv = inv.sudo().line_ids.filtered(
+            lambda l: l.account_id.account_type == 'asset_receivable')
+        for partial in recv.mapped('matched_credit_ids'):
+            aml = partial.credit_move_id
+            entries.append({
+                'name': aml.move_id.name or aml.name or '',
+                'date': partial.max_date or aml.date,
+                'amount': partial.debit_amount_currency,
+            })
+        return entries
+
     def _statement_balance_mxn(self, banorte_rate):
         """Saldo (balance) de ESTA orden expresado en MXN.
 
@@ -60,15 +82,17 @@ class SaleOrder(models.Model):
 
         total_paid = 0.0
         for inv in self._get_related_invoices():
-            for payment in inv._get_reconciled_payments():
-                if payment.currency_id == self.currency_id:
-                    total_paid += payment.amount
-                elif payment.currency_id.name == 'MXN' and currency_name == 'USD' and banorte_rate > 0:
-                    total_paid += payment.amount / banorte_rate
-                elif payment.currency_id.name == 'USD' and currency_name == 'MXN' and banorte_rate > 0:
-                    total_paid += payment.amount * banorte_rate
+            inv_cur = inv.currency_id
+            for entry in self._statement_reconciled_entries(inv):
+                amount = entry['amount']
+                if inv_cur == self.currency_id:
+                    total_paid += amount
+                elif inv_cur.name == 'MXN' and currency_name == 'USD' and banorte_rate > 0:
+                    total_paid += amount / banorte_rate
+                elif inv_cur.name == 'USD' and currency_name == 'MXN' and banorte_rate > 0:
+                    total_paid += amount * banorte_rate
                 else:
-                    total_paid += payment.amount
+                    total_paid += amount
 
         balance = self.amount_total - total_paid  # en moneda de la orden
 
@@ -394,21 +418,23 @@ class SaleOrder(models.Model):
         invoices = self._get_related_invoices()
 
         for inv in invoices:
-            for payment in inv._get_reconciled_payments():
+            inv_cur = inv.currency_id
+            for entry in self._statement_reconciled_entries(inv):
+                amount = entry['amount']
                 payments_data.append({
-                    'name': payment.name or '',
-                    'date': som_format_date(payment.date, empty=''),
-                    'amount': payment.amount,
-                    'currency': payment.currency_id.name,
+                    'name': entry['name'],
+                    'date': som_format_date(entry['date'], empty=''),
+                    'amount': amount,
+                    'currency': inv_cur.name,
                 })
-                if payment.currency_id == self.currency_id:
-                    total_paid += payment.amount
-                elif payment.currency_id.name == 'MXN' and currency_name == 'USD' and banorte_rate > 0:
-                    total_paid += payment.amount / banorte_rate
-                elif payment.currency_id.name == 'USD' and currency_name == 'MXN' and banorte_rate > 0:
-                    total_paid += payment.amount * banorte_rate
+                if inv_cur == self.currency_id:
+                    total_paid += amount
+                elif inv_cur.name == 'MXN' and currency_name == 'USD' and banorte_rate > 0:
+                    total_paid += amount / banorte_rate
+                elif inv_cur.name == 'USD' and currency_name == 'MXN' and banorte_rate > 0:
+                    total_paid += amount * banorte_rate
                 else:
-                    total_paid += payment.amount
+                    total_paid += amount
 
         amount_total = self.amount_total
         amount_untaxed = self.amount_untaxed
