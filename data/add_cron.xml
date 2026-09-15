@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="cron_add_process" model="ir.cron">
+        <field name="name">ADD: procesar lotes por bloques</field>
+        <field name="model_id" ref="model_som_add_batch"/>
+        <field name="state">code</field><field name="code">model._cron_process()</field>
+        <field name="interval_number">1</field><field name="interval_type">minutes</field>
+        <field name="user_id" ref="base.user_root"/>
+    </record>
+    <record id="cron_add_cleanup" model="ir.cron">
+        <field name="name">ADD: limpiar archivos pendientes y fallidos vencidos</field>
+        <field name="model_id" ref="model_som_add_batch"/>
+        <field name="state">code</field><field name="code">model._cron_cleanup()</field>
+        <field name="interval_number">1</field><field name="interval_type">days</field>
+        <field name="user_id" ref="base.user_root"/>
+    </record>
+</odoo>

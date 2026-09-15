@@ -1,0 +1,20 @@
+id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
+access_add_document_reader,ADD document lectura,model_som_add_document,group_add_reader,1,0,0,0
+access_add_document_operator,ADD document procesamiento,model_som_add_document,group_add_operator,1,1,1,0
+access_add_concept_reader,ADD concept lectura,model_som_add_concept,group_add_reader,1,0,0,0
+access_add_concept_operator,ADD concept procesamiento,model_som_add_concept,group_add_operator,1,1,1,1
+access_add_tax_reader,ADD tax lectura,model_som_add_tax,group_add_reader,1,0,0,0
+access_add_tax_operator,ADD tax procesamiento,model_som_add_tax,group_add_operator,1,1,1,1
+access_add_payment_reader,ADD payment lectura,model_som_add_payment,group_add_reader,1,0,0,0
+access_add_payment_operator,ADD payment procesamiento,model_som_add_payment,group_add_operator,1,1,1,1
+access_add_application_reader,ADD application lectura,model_som_add_application,group_add_reader,1,0,0,0
+access_add_application_operator,ADD application procesamiento,model_som_add_application,group_add_operator,1,1,1,1
+access_add_relation_reader,ADD relation lectura,model_som_add_relation,group_add_reader,1,0,0,0
+access_add_relation_operator,ADD relation procesamiento,model_som_add_relation,group_add_operator,1,1,1,1
+access_add_batch_reader,ADD batch lectura,model_som_add_batch,group_add_reader,1,0,0,0
+access_add_batch_operator,ADD batch procesamiento,model_som_add_batch,group_add_operator,1,1,1,0
+access_add_item_reader,ADD item lectura,model_som_add_item,group_add_reader,1,0,0,0
+access_add_item_operator,ADD item procesamiento,model_som_add_item,group_add_operator,1,1,1,0
+access_add_audit_reader,ADD audit lectura,model_som_add_audit,group_add_reader,1,0,0,0
+access_add_config_reader,ADD config lectura,model_som_add_config,group_add_reader,1,0,0,0
+access_add_config_admin,ADD configuración,model_som_add_config,group_add_admin,1,1,1,1

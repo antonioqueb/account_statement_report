@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="som_add.Explorer">
+    <main class="o_add" t-att-class="{'o_add_full': state.fullscreen}">
+        <header class="o_add_header">
+            <div><span class="o_add_brand">ADD</span><h1 t-esc="title"/><p>Repositorio privado de XML · consulta documental</p></div>
+            <div class="o_add_actions">
+                <button class="btn btn-outline-secondary" t-on-click="() => this.load()" t-att-disabled="state.busy">Actualizar</button>
+                <t t-if="state.boot.operator">
+                    <button t-if="mode !== 'received'" class="btn btn-primary" t-on-click="() => this.openUpload('issued')">Cargar XML emitidos</button>
+                    <button t-if="mode !== 'issued'" class="btn btn-primary" t-on-click="() => this.openUpload('received')">Cargar XML recibidos</button>
+                </t>
+            </div>
+        </header>
+        <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
+        <section class="o_add_filters" aria-label="Filtros documentales">
+            <label>Compañía autorizada<select class="form-select" t-att-multiple="mode === 'dashboard'" t-on-change="changeCompany">
+                <option t-foreach="state.boot.companies" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="state.filters.companies.includes(c.id)" t-esc="c.name"/>
+            </select></label>
+            <label t-if="mode === 'dashboard'">Dirección<select class="form-select" t-model="state.filters.direction"><option value="received">Recibidos</option><option value="issued">Emitidos</option><option value="both">Ambas · documentos únicos por compañía</option></select></label>
+            <label class="o_add_search">Buscar<input class="form-control" t-model="state.filters.q" t-on-keydown="(e) => e.key === 'Enter' and this.load(true)" placeholder="UUID, RFC, nombre, serie, folio o concepto"/></label>
+            <label>Desde<input class="form-control" type="date" t-model="state.filters.start"/></label>
+            <label>Hasta<input class="form-control" type="date" t-model="state.filters.end"/></label>
+            <label>Moneda<input class="form-control" t-model="state.filters.currency" placeholder="Todas, separadas" maxlength="3"/></label>
+            <button class="btn btn-primary" t-on-click="() => this.load(true)" t-att-disabled="state.busy">Aplicar</button>
+            <button class="btn btn-light" t-on-click="() => state.advanced = !state.advanced">Más filtros</button>
+        </section>
+        <section t-if="state.advanced" class="o_add_filters o_add_advanced">
+            <label>Tipo<select class="form-select" t-model="state.filters.kind"><option value="">Todos</option><option>I</option><option>E</option><option>P</option><option>T</option></select></label>
+            <label>Método<select class="form-select" t-model="state.filters.method"><option value="">Todos</option><option>PUE</option><option>PPD</option></select></label>
+            <label>Forma<input class="form-control" t-model="state.filters.form" placeholder="01, 03…"/></label>
+            <label>Uso CFDI<input class="form-control" t-model="state.filters.use" placeholder="G03…"/></label>
+            <label>Impuesto<input class="form-control" t-model="state.filters.tax" placeholder="001, 002, 003…"/></label>
+            <label>Complemento<input class="form-control" t-model="state.filters.complement" placeholder="CartaPorte, Pagos…"/></label>
+            <label>Estado SAT<select class="form-select" t-model="state.filters.sat"><option value="">Todos</option><option value="unknown">No consultado</option><option value="valid">Vigencia confirmada</option><option value="cancelled">Cancelado confirmado</option><option value="not_found">No encontrado</option><option value="error">Error de consulta</option></select></label>
+            <label>Consistencia<select class="form-select" t-model="state.filters.consistency"><option value="">Todas</option><option value="ok">Consistente</option><option value="warning">Con alertas</option><option value="partial">Validación parcial</option></select></label>
+            <label>Lote (ID)<input class="form-control" type="number" t-model="state.filters.batch"/></label>
+            <label>Categoría<input class="form-control" t-model="state.filters.classification"/></label>
+            <label>Base temporal<select class="form-select" t-model="state.filters.date_basis"><option value="fiscal_date">Fecha fiscal local</option><option value="stamp_date">Timbrado</option><option value="create_date">Carga</option></select></label>
+            <label t-if="mode === 'dashboard'">Medida<select class="form-select" t-model="state.filters.measure"><option value="base">Subtotal menos descuento</option><option value="total">Total documental</option></select></label>
+            <label class="o_add_check"><input type="checkbox" t-model="state.filters.valid_only"/> Solo vigencia confirmada (requiere evidencia SAT)</label>
+            <label class="o_add_check"><input type="checkbox" t-model="state.filters.archived"/> Documentos archivados</label>
+            <label>Vistas privadas de este navegador<select class="form-select" t-on-change="restoreView"><option value="">Elegir vista</option><option t-foreach="state.saved" t-as="v" t-key="v_index" t-att-value="v_index" t-esc="v.name"/></select></label>
+            <label>Guardar filtros<input class="form-control" t-model="state.saveName" placeholder="Nombre de vista privada"/></label><button class="btn btn-light" t-on-click="saveView">Guardar vista</button>
+        </section>
+        <p class="o_add_scope"><strong t-esc="state.filters.direction === 'issued' ? 'Emitidos' : state.filters.direction === 'received' ? 'Recibidos' : 'Ambas perspectivas'"/> · <t t-esc="state.filters.start || 'Inicio'"/> a <t t-esc="state.filters.end || 'hoy'"/> · <t t-esc="state.filters.currency || 'monedas separadas'"/> · <t t-esc="state.filters.valid_only ? 'Vigencia confirmada' : 'Todos los documentos cargados; vigencia no presumida'"/></p>
+        <div t-if="state.busy" class="o_add_loading" role="status">Consultando datos autorizados…</div>
+
+        <t t-if="mode === 'dashboard' and state.dashboard">
+            <div class="o_add_notice"><t t-esc="state.dashboard.notice"/><br/>Actualizado: <t t-esc="state.dashboard.updated_at"/> (hora de servidor). Pagos por FechaPago; incidencias por carga. Meses de borde pueden estar incompletos.</div>
+            <div class="o_add_dashboard">
+                <section t-foreach="sections" t-as="section" t-key="section.name" class="o_add_chart">
+                    <h2 t-esc="section.name"/>
+                    <button t-foreach="section.rows" t-as="metric" t-key="metric_index" class="o_add_bar" t-on-click="() => this.drill(metric)">
+                        <span class="o_add_bar_label" t-esc="metric.label"/>
+                        <span class="o_add_bar_track"><span t-att-style="'width:' + (100 * Math.abs(metric.value) / section.maximum) + '%'"/></span>
+                        <strong><t t-esc="fmt(metric.value, ['documentos','archivos','aplicaciones'].includes(metric.unit) ? 0 : 2)"/> <t t-esc="metric.unit"/></strong>
+                        <small t-if="metric.count !== undefined"><t t-esc="metric.count"/> registros</small>
+                        <small t-if="metric.percent !== undefined"><t t-esc="fmt(metric.percent)"/>% · acumulado <t t-esc="fmt(metric.cumulative)"/>%</small>
+                    </button>
+                </section>
+                <p t-if="!sections.length">No hay documentos en este alcance.</p>
+            </div>
+        </t>
+
+        <t t-if="mode !== 'dashboard'">
+            <div class="o_add_toolbar">
+                <strong><t t-esc="state.count"/> documentos filtrados</strong>
+                <span><t t-esc="state.selected.length"/> seleccionados en esta página</span>
+                <button class="btn btn-sm btn-light" t-on-click="() => state.showColumns = !state.showColumns">Columnas</button>
+                <select class="form-select form-select-sm o_add_group" t-on-change="group"><option value="">Agrupar en lista</option><option value="emitter_rfc">Emisor</option><option value="receiver_rfc">Receptor</option><option value="fiscal_date:month">Mes</option><option value="kind">Tipo</option><option value="currency">Moneda</option><option value="batch_id">Lote</option></select>
+                <t t-if="state.boot.export"><button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.exportFile('csv')">CSV columnas</button><button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.exportFile('xlsx')">XLSX detallado</button><button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.exportFile('zip')">ZIP originales</button></t>
+                <small t-if="state.boot.export">Exportación: selección, o todo el filtro si no hay selección.</small>
+            </div>
+            <div t-if="state.showColumns" class="o_add_columns"><label t-foreach="columns" t-as="col" t-key="col[0]"><input type="checkbox" t-att-checked="state.visible.includes(col[0])" t-on-change="() => this.toggleColumn(col[0])"/> <t t-esc="col[1]"/></label></div>
+            <div class="o_add_totals"><span>Conjunto filtrado completo:</span><strong t-foreach="state.totals" t-as="total" t-key="total.currency + total.kind"><t t-esc="total.kind"/> · <t t-esc="fmt(total.total)"/> <t t-esc="total.currency"/> (<t t-esc="total.count"/>)</strong><small>Tipos I y E separados. P excluido de facturación. Incluye el estado SAT filtrado.</small></div>
+            <div class="o_add_totals" t-if="state.selected.length"><span>Selección de página:</span><strong t-foreach="selectionTotals" t-as="total" t-key="total[0]"><t t-esc="total[0]"/>: <t t-esc="fmt(total[1])"/></strong></div>
+            <div class="o_add_workspace">
+                <div class="o_add_table_scroll">
+                    <table class="o_add_table"><thead><tr><th class="o_add_select"><input type="checkbox" aria-label="Seleccionar página" t-on-change="selectPage" t-att-checked="state.rows.length > 0 and state.selected.length === state.rows.length"/></th>
+                        <th t-foreach="visibleColumns" t-as="col" t-key="col[0]" t-att-style="'min-width:' + (state.widths[col[0]] || 140) + 'px;width:' + (state.widths[col[0]] || 140) + 'px'">
+                            <button t-on-click="() => this.sort(col[0])"><t t-esc="col[1]"/> <span t-if="state.order.startsWith(col[0])">↕</span></button><span class="o_add_resizer" t-on-pointerdown="(e) => this.resize(e, col[0])"/>
+                        </th></tr></thead>
+                        <tbody><tr t-foreach="state.rows" t-as="row" t-key="row.id" t-att-class="{'o_add_current': state.detail?.id === row.id}" t-on-click="() => this.inspect(row.id)">
+                            <td class="o_add_select" t-on-click.stop="() => {}"><input type="checkbox" t-att-checked="state.selected.includes(row.id)" t-on-change="() => this.toggleSelect(row.id)" t-att-aria-label="'Seleccionar ' + row.uuid"/></td>
+                            <td t-foreach="visibleColumns" t-as="col" t-key="col[0]" t-att-class="{'o_add_number': numeric(col[0])}" t-att-title="cell(row, col[0])"><t t-esc="cell(row, col[0])"/></td>
+                        </tr><tr t-if="!state.rows.length and !state.busy"><td t-att-colspan="visibleColumns.length + 1" class="o_add_empty">No hay XML en este alcance. Ajuste los filtros o cargue un lote.</td></tr></tbody>
+                    </table>
+                </div>
+                <aside t-if="state.detail" class="o_add_detail">
+                    <header><div><strong t-esc="state.detail.uuid"/><button class="btn btn-sm btn-link" t-on-click="() => this.copy(state.detail.uuid)">Copiar UUID</button></div>
+                        <div class="o_add_actions"><button class="btn btn-sm btn-light" t-on-click="() => this.adjacent(-1)" title="Documento anterior">←</button><button class="btn btn-sm btn-light" t-on-click="() => this.adjacent(1)" title="Documento siguiente">→</button><button class="btn btn-sm btn-light" t-on-click="() => state.fullscreen = !state.fullscreen">Ampliar / reducir</button><button class="btn btn-sm btn-light" t-on-click="() => { state.detail = null; state.fullscreen = false; }" title="Cerrar detalle">×</button></div>
+                    </header>
+                    <nav><button t-foreach="tabs" t-as="tab" t-key="tab[0]" t-att-class="{'active': state.tab === tab[0]}" t-on-click="() => state.tab = tab[0]" t-esc="tab[1]"/></nav>
+                    <div class="o_add_detail_body">
+                        <p t-if="state.detail.alerts" class="alert alert-warning o_add_wrap" t-esc="state.detail.alerts"/>
+                        <t t-if="state.tab === 'summary'">
+                            <h2>Identificación fiscal</h2><dl class="o_add_kv"><t t-foreach="entries(parsed.header)" t-as="pair" t-key="pair[0]"><dt t-esc="pair[0]"/><dd t-esc="pair[1]"/></t></dl>
+                            <h2>Emisor</h2><dl class="o_add_kv"><t t-foreach="entries(parsed.emitter)" t-as="pair" t-key="pair[0]"><dt t-esc="pair[0]"/><dd t-esc="pair[1]"/></t></dl><button class="btn btn-sm btn-link" t-on-click="() => this.copy(parsed.emitter.Rfc)">Copiar RFC emisor</button>
+                            <h2>Receptor</h2><dl class="o_add_kv"><t t-foreach="entries(parsed.receiver)" t-as="pair" t-key="pair[0]"><dt t-esc="pair[0]"/><dd t-esc="pair[1]"/></t></dl><button class="btn btn-sm btn-link" t-on-click="() => this.copy(parsed.receiver.Rfc)">Copiar RFC receptor</button>
+                        </t>
+                        <t t-if="state.tab === 'concepts'">
+                            <article class="o_add_line" t-foreach="parsed.concepts" t-as="line" t-key="line.index"><h2>Partida <t t-esc="line.index"/> <small t-if="!line.commercial">· concepto técnico de pago; excluido del análisis comercial</small></h2>
+                                <p class="o_add_wrap" t-esc="line.attributes.Descripcion"/><dl class="o_add_kv"><t t-foreach="entries(line.attributes)" t-as="pair" t-key="pair[0]"><dt t-esc="pair[0]"/><dd t-esc="pair[1]"/></t></dl>
+                                <h3>Impuestos de esta partida</h3><pre t-esc="pretty(line.taxes)"/>
+                            </article>
+                        </t>
+                        <t t-if="state.tab === 'taxes'">
+                            <p>Los globales se usan para el total documental. Los impuestos por concepto se muestran para comprobarlo; no se suman ambos niveles.</p>
+                            <p>Diferencia total / componentes: <strong t-esc="parsed.difference"/> · tolerancia <t t-esc="parsed.tolerance"/>.</p>
+                            <article t-foreach="parsed.taxes" t-as="tax" t-key="tax_index" class="o_add_line"><h3><t t-esc="tax.level"/> · <t t-esc="tax.kind === 'withholding' ? 'Retención' : 'Traslado'"/> · concepto <t t-esc="tax.concept_index || '—'"/></h3><dl class="o_add_kv"><t t-foreach="entries(tax.raw)" t-as="pair" t-key="pair[0]"><dt t-esc="pair[0]"/><dd t-esc="pair[1]"/></t></dl></article>
+                        </t>
+                        <t t-if="state.tab === 'payments'">
+                            <p>Montos del nodo Pago, por FechaPago y MonedaP. Un saldo insoluto corresponde al evento documentado; no es saldo bancario ni cartera actual.</p>
+                            <article t-foreach="parsed.payments" t-as="pay" t-key="pay.index" class="o_add_line"><h2>Pago <t t-esc="pay.index"/></h2><dl class="o_add_kv"><t t-foreach="entries(pay.attributes)" t-as="pair" t-key="pair[0]"><dt t-esc="pair[0]"/><dd t-esc="pair[1]"/></t></dl>
+                                <h3>Aplicaciones e impuestos DR</h3><pre t-esc="pretty(pay.applications)"/><h3>Impuestos del pago</h3><pre t-esc="pretty(pay.taxes)"/></article>
+                            <h3>Totales Pagos 2.0 · MXN (no se suman otra vez)</h3><pre t-esc="pretty(parsed.payment_totals_mxn)"/>
+                            <h2>UUID de aplicaciones</h2><p t-foreach="state.detail.applications" t-as="app" t-key="app.id"><t t-esc="app.target_uuid"/> · <button t-if="app.target_id" class="btn btn-sm btn-link" t-on-click="() => this.inspect(app.target_id[0])">Ver documento cargado</button><strong t-else="">No cargado</strong></p>
+                            <h2>Relaciones fiscales</h2><p t-foreach="state.detail.relations" t-as="rel" t-key="rel.id"><t t-esc="rel.kind"/> · <t t-esc="rel.target_uuid"/> · <button t-if="rel.target_id" class="btn btn-sm btn-link" t-on-click="() => this.inspect(rel.target_id[0])">Ver documento cargado</button><strong t-else="">Pendiente: UUID no cargado</strong></p>
+                        </t>
+                        <t t-if="state.tab === 'complements'">
+                            <article t-foreach="parsed.complements" t-as="comp" t-key="comp_index" class="o_add_line"><h2><t t-esc="comp.name"/> <t t-esc="comp.version"/></h2><p t-esc="comp.specialized ? 'Datos estructurados presentes en el XML' : 'Complemento conservado; sin desglose especializado'"/><pre t-esc="pretty(comp.tree)"/></article>
+                            <p t-if="!parsed.complements.length">Sin complementos adicionales.</p>
+                        </t>
+                        <t t-if="state.tab === 'xml'"><button t-if="state.boot.export" class="btn btn-outline-primary" t-on-click="() => this.exportFile('xml', true)">Descargar XML original</button><p>Representación de texto escapada. La descarga conserva exactamente los bytes originales.</p><pre class="o_add_xml" t-esc="state.detail.xml"/></t>
+                        <t t-if="state.tab === 'trace'">
+                            <dl class="o_add_kv"><dt>Compañía</dt><dd t-esc="state.detail.company_id[1]"/><dt>Lote</dt><dd t-esc="state.detail.batch_id[1]"/><dt>Usuario de carga</dt><dd t-esc="state.detail.create_uid[1]"/><dt>Fecha de carga</dt><dd t-esc="state.detail.create_date"/><dt>SHA-256</dt><dd t-esc="state.detail.sha256"/><dt>Parser</dt><dd t-esc="state.detail.parser_version"/><dt>Archivo</dt><dd t-esc="state.detail.filename"/></dl>
+                            <h2>Clasificación administrativa</h2><label>Referencia<input class="form-control" t-model="state.detail.reference" t-att-disabled="!state.boot.operator"/></label><label>Categoría<input class="form-control" t-model="state.detail.classification" t-att-disabled="!state.boot.operator"/></label><label>Notas<textarea class="form-control" t-model="state.detail.notes" t-att-disabled="!state.boot.operator"/></label>
+                            <div t-if="state.boot.operator" class="o_add_actions"><button class="btn btn-primary" t-on-click="saveNotes">Guardar clasificación</button><button class="btn btn-outline-secondary" t-on-click="reprocess">Reprocesar original</button></div>
+                            <div t-if="state.boot.admin"><label>Motivo de archivo<textarea class="form-control" t-model="state.archiveReason"/></label><button class="btn btn-outline-danger" t-att-disabled="!state.archiveReason.trim()" t-on-click="archive">Archivar con motivo</button></div>
+                        </t>
+                    </div>
+                </aside>
+            </div>
+            <footer class="o_add_pagination"><span>Página visible: <t t-esc="state.count ? state.offset + 1 : 0"/>–<t t-esc="pageEnd"/> de <t t-esc="state.count"/></span><button class="btn btn-light" t-att-disabled="state.offset === 0 or state.busy" t-on-click="() => this.page(-1)">Anterior</button><button class="btn btn-light" t-att-disabled="pageEnd >= state.count or state.busy" t-on-click="() => this.page(1)">Siguiente</button></footer>
+        </t>
+
+        <section t-if="state.upload" class="o_add_upload_backdrop" role="dialog" aria-modal="true" aria-label="Carga de XML">
+            <div class="o_add_upload"><header><h2>Cargar XML <t t-esc="state.uploadDirection === 'issued' ? 'emitidos' : 'recibidos'"/></h2><button class="btn btn-light" t-att-disabled="state.uploading" t-on-click="() => state.upload = false">Cerrar</button></header>
+                <label>Compañía del lote<select class="form-select" t-model="state.uploadCompany" t-att-disabled="state.uploading or !!state.batch"><option t-foreach="state.boot.companies" t-as="c" t-key="c.id" t-att-value="c.id" t-esc="c.name"/></select></label>
+                <div class="o_add_direction">Dirección fija: <strong t-esc="state.uploadDirection === 'issued' ? 'EMITIDOS' : 'RECIBIDOS'"/>. La compañía y la dirección no cambian al procesar.</div>
+                <div class="o_add_drop" t-on-dragover.prevent="() => {}" t-on-drop="dropped"><p>Arrastre XML o ZIP de XML aquí</p><input type="file" accept=".xml,.zip" multiple="multiple" t-ref="files" t-on-change="picked" t-att-disabled="state.uploading or !!state.batch"/><p><t t-esc="state.uploadFiles.length"/> archivos seleccionados</p></div>
+                <p>Límites iniciales: 5 MiB por XML, 25 MiB por archivo recibido, 100 MiB descomprimidos y 1,000 XML por lote. La configuración de la compañía puede ajustar estos límites.</p>
+                <div t-if="state.uploading"><p>Recepción: archivo <t t-esc="state.uploadIndex"/> de <t t-esc="state.uploadFiles.length"/> · <t t-esc="state.fileProgress"/>%</p><progress max="100" t-att-value="state.fileProgress"/></div>
+                <div t-if="state.batch"><p>Procesamiento persistido: <t t-esc="fmt(state.batch.progress || 0, 0)"/>%</p><progress max="100" t-att-value="state.batch.progress || 0"/>
+                    <p>Importados: <t t-esc="state.batch.imported_count || 0"/> · duplicados: <t t-esc="state.batch.duplicate_count || 0"/> · rechazados: <t t-esc="state.batch.rejected_count || 0"/> · fallidos: <t t-esc="state.batch.failed_count || 0"/> · pendientes: <t t-esc="state.batch.pending_count || 0"/></p>
+                    <button class="btn btn-outline-secondary" t-on-click="openBatch" t-att-disabled="state.uploading">Ver resultados por archivo</button>
+                    <button t-if="['pending','processing'].includes(state.batch.state)" class="btn btn-outline-danger" t-on-click="cancelBatch">Cancelar pendientes</button>
+                </div>
+                <p t-if="state.error" class="alert alert-danger" t-esc="state.error"/>
+                <button class="btn btn-primary" t-on-click="importFiles" t-att-disabled="!state.uploadFiles.length or state.uploading or !!state.batch">Crear lote e importar</button>
+                <p class="text-muted">Carga local. No requiere SAT ni e.firma. No crea documentos contables.</p>
+            </div>
+        </section>
+    </main>
+</t>
+</templates>
