@@ -142,7 +142,6 @@ export class AddExplorer extends Component {
     async sort(key) {
         key = key === "counterparty" ? (this.isIssued ? "receiver_name" : "emitter_name") : key;
         key = key === "rfc" ? (this.isIssued ? "receiver_rfc" : "emitter_rfc") : key;
-        if (key === "company_id") return;
         const dir = this.state.order.startsWith(`${key} asc`) ? "desc" : "asc";
         this.state.order = `${key} ${dir}, id desc`;
         await this.load(true);
@@ -171,7 +170,11 @@ export class AddExplorer extends Component {
         catch { this.notification.add("No se pudo acceder al portapapeles. Puede seleccionar y copiar el texto.", { type: "warning" }); }
     }
     persist() {
-        localStorage.setItem(this.storageKey, JSON.stringify({ visible: this.state.visible, widths: this.state.widths, saved: this.state.saved }));
+        try {
+            localStorage.setItem(this.storageKey, JSON.stringify({ visible: this.state.visible, widths: this.state.widths, saved: this.state.saved }));
+        } catch {
+            this.notification.add("El navegador no permite guardar preferencias locales.", { type: "warning" });
+        }
     }
     toggleColumn(key) {
         this.state.visible = this.state.visible.includes(key) ? this.state.visible.filter(k => k !== key) : [...this.state.visible, key];
@@ -259,7 +262,8 @@ export class AddExplorer extends Component {
     async exportFile(format, current = false) {
         const body = new FormData();
         body.set("csrf_token", odoo.csrf_token); body.set("companies", JSON.stringify(this.state.filters.companies));
-        body.set("filters", JSON.stringify(this.state.filters));
+        const filters = current ? { companies: [this.state.detail.company_id[0]], direction: "both", archived: !this.state.detail.active } : this.state.filters;
+        body.set("filters", JSON.stringify(filters));
         body.set("ids", JSON.stringify(current ? [this.state.detail.id] : this.state.selected));
         body.set("format", format);
         const columns = this.state.visible.flatMap(key => key === "counterparty" ? [this.isIssued ? "receiver_name" : "emitter_name"] : key === "rfc" ? [this.isIssued ? "receiver_rfc" : "emitter_rfc"] : key === "folio" ? ["series", "folio"] : [key]);

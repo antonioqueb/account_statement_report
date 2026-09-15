@@ -13,7 +13,7 @@ class AddUsers(models.Model):
                                        string='Compañías autorizadas ADD', copy=False)
 
     def _add_check_grant(self, vals):
-        if 'add_company_ids' in vals and not self.env.su:
+        if ('add_company_ids' in vals or 'default_add_company_ids' in self.env.context) and not self.env.su:
             if not (self.env.user.has_group('base.group_erp_manager') and
                     self.env.user.has_group(PREFIX + 'group_add_access')):
                 raise AccessError('Se requiere gestión de usuarios y el permiso independiente de accesos ADD.')

@@ -74,7 +74,7 @@ class AddExplorer(models.Model):
     @api.model
     def explore(self, filters, offset=0, limit=50, order='fiscal_date desc, id desc'):
         domain = self._filter_domain(filters)
-        allowed = set(LIST_FIELDS) - {'company_id', 'batch_id'}
+        allowed = set(LIST_FIELDS)
         for clause in order.split(','):
             parts = clause.strip().split()
             if len(parts) != 2 or parts[0] not in allowed | {'id'} or parts[1].lower() not in ('asc', 'desc'):
@@ -154,11 +154,11 @@ class AddExplorer(models.Model):
         # avoiding a 100k-ID list or repeated invoice totals through joins.
         tax_domain = [('document_id', 'any', economic), ('level', 'in', ['global', 'local'])]
         for cur, doc_kind, kind, tax, amount in self.env['som.add.tax']._read_group(tax_domain, ['currency', 'document_kind', 'kind', 'tax'], ['amount:sum']):
-            add('Impuestos globales documentados', '%s · %s · %s' % (doc_kind, kind, tax), amount, cur,
+            add('Impuestos globales documentados', '%s · %s · %s' % (doc_kind, 'Retención' if kind == 'withholding' else 'Traslado', tax), amount, cur,
                 tax_domain + [('currency', '=', cur), ('document_kind', '=', doc_kind), ('kind', '=', kind), ('tax', '=', tax)], 'som.add.tax')
         line_domain = [('document_id', 'any', economic), ('level', '=', 'concept')]
         for cur, doc_kind, kind, tax, factor, rate, amount in self.env['som.add.tax']._read_group(line_domain, ['currency', 'document_kind', 'kind', 'tax', 'factor', 'rate'], ['amount:sum']):
-            add('Impuestos por tasa · comprobación de conceptos', '%s · %s · %s · %s · %s' % (doc_kind, kind, tax, factor or 'Sin factor', rate if rate is not False else 'Sin tasa'), amount, cur,
+            add('Impuestos por tasa · comprobación de conceptos', '%s · %s · %s · %s · %s' % (doc_kind, 'Retención' if kind == 'withholding' else 'Traslado', tax, factor or 'Sin factor', rate if rate is not False else 'Sin tasa'), amount, cur,
                 line_domain + [('currency', '=', cur), ('document_kind', '=', doc_kind), ('kind', '=', kind), ('tax', '=', tax), ('factor', '=', factor), ('rate', '=', rate)], 'som.add.tax')
         payment_doc_domain = self._filter_domain(dict(filters, kind='P'), economic=True, dates=False, currency=False)
         payment_domain = [('document_id', 'any', payment_doc_domain)]

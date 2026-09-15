@@ -99,7 +99,7 @@ Un rol sin concesiones de compañía no permite consultar documentos.
 |---|---|---|---|
 | Ver documentos, desglose, XML como texto y gráficos del alcance | Sí | Sí | Sí |
 | Crear y cargar lotes propios | No | Sí | Sí |
-| Modificar categoría, referencia y notas (con auditoría) | No | Sí | Sí |
+| Modificar categoría, etiquetas, referencia y notas (con auditoría) | No | Sí | Sí |
 | Reprocesar originales autorizados | No | Sí | Sí |
 | Continuar/reintentar/cancelar lotes | No | Propios | Autorizados; el proceso sigue ejecutándose como propietario original |
 | Archivar con motivo | No | No | Sí |
@@ -194,8 +194,10 @@ sin visibilidad del ganador, el ítem queda pendiente para la siguiente transacc
   suman automáticamente monedas incompatibles.
 - Panel lateral con pestañas, anterior/siguiente entre páginas y ampliación.
   El XML se muestra mediante texto escapado, sin interpretarlo como HTML.
-- Conceptos permite filtrar por clave SAT, descripción, fecha, unidad, moneda y
-  documento. Una clave SAT no homologa productos: no se comparan precios unitarios
+- Conceptos permite filtrar por clave SAT, descripción, fecha, unidad, moneda,
+  emisor/receptor, impuesto, categoría y documento. Las etiquetas de documentos
+  se guardan como texto separado por comas, con búsqueda por coincidencia de texto.
+  Una clave SAT no homologa productos: no se comparan precios unitarios
   ni se suman cantidades de unidades incompatibles automáticamente.
 - En móvil se proponen columnas esenciales; el panel ocupa el área de detalle.
   La comprobación visual real queda pendiente de ejecutar Odoo.
