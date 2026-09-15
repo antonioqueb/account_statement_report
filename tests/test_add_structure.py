@@ -13,7 +13,7 @@ class StructureTests(unittest.TestCase):
     def test_manifest_dependencies_and_all_files_exist(self):
         manifest = ast.literal_eval((ROOT / '__manifest__.py').read_text())
         self.assertFalse(manifest['application'])
-        self.assertEqual(manifest['version'], '19.0.4.0.0')
+        self.assertEqual(manifest['version'], '19.0.4.0.1')
         for dependency in ('sale', 'account', 'stock', 'sale_delivery_wizard', 'sale_order_extended_metrics'):
             self.assertIn(dependency, manifest['depends'])
         for name in manifest['data']:
@@ -34,7 +34,7 @@ class StructureTests(unittest.TestCase):
                 self.assertIn(term, element.text)
 
     def test_no_implicit_grants_no_vault_acl(self):
-        with (ROOT / 'security/add_access.csv').open() as stream:
+        with (ROOT / 'security/add/ir.model.access.csv').open() as stream:
             rows = list(csv.DictReader(stream))
         for row in rows:
             self.assertTrue(row['group_id/id'].startswith('group_add_'))
@@ -42,6 +42,30 @@ class StructureTests(unittest.TestCase):
         groups = E.parse(str(ROOT / 'security/add_groups.xml'))
         self.assertFalse(groups.xpath('//field[@name="users" or @name="user_ids"]'))
         self.assertNotIn('base.group_user', ''.join(groups.xpath('//field/text()')))
+
+    def test_acl_csv_loader_model_and_group_order(self):
+        """Odoo chooses the CSV target model from its basename, not its headers."""
+        manifest = ast.literal_eval((ROOT / '__manifest__.py').read_text())
+        defined_groups, access_ids = set(), set()
+        for name in manifest['data']:
+            path = ROOT / name
+            if path.suffix == '.xml':
+                tree = E.parse(str(path))
+                defined_groups.update(tree.xpath('//record[@model="res.groups"]/@id'))
+            elif path.suffix == '.csv':
+                with path.open() as stream:
+                    reader = csv.DictReader(stream)
+                    if 'perm_read' not in reader.fieldnames:
+                        continue
+                    self.assertEqual(path.stem, 'ir.model.access',
+                                     'Un CSV de ACL debe cargar el modelo ir.model.access')
+                    for row in reader:
+                        self.assertNotIn(row['id'], access_ids)
+                        access_ids.add(row['id'])
+                        group = row['group_id/id']
+                        if group.startswith('group_add_'):
+                            self.assertIn(group, defined_groups,
+                                          'Los grupos ADD deben cargarse antes de sus ACL')
 
     def test_menu_root_and_required_sections(self):
         views = E.parse(str(ROOT / 'views/add_views.xml'))

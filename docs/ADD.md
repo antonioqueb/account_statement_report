@@ -2,7 +2,7 @@
 
 ## Alcance y estado de verificación
 
-Implementado dentro de **`Ventas/account_statement_report`**, versión **19.0.4.0.0**.
+Implementado dentro de **`Ventas/account_statement_report`**, versión **19.0.4.0.1**.
 El addon conserva sus dependencias y reportes anteriores, y continúa con
 `application=False`. ADD es un menú raíz independiente con icono propio.
 No se creó otro addon ni otro manifiesto.
@@ -18,7 +18,7 @@ pagos contables, pedidos, contactos, productos o movimientos de inventario. Las
 relaciones son exclusivamente entre XML de la misma compañía. No incluye
 conectores SAT, e.firma, notificaciones, correo, portal ni servicios externos.
 
-Se ejecutaron **26 pruebas del parser/archivos/exportadores y 6 comprobaciones
+Se ejecutaron **26 pruebas del parser/archivos/exportadores y 7 comprobaciones
 estáticas**, con resultado satisfactorio. Se incluye una suite de **16 pruebas
 Odoo** pendiente de ejecución en la instalación del usuario. No se presenta la
 seguridad de las rutas HTTP, la concurrencia PostgreSQL ni la interfaz como
@@ -40,7 +40,7 @@ los ejemplos de pruebas son sintéticos, sin firmas auténticas.
 | `models/add_analytics.py` | Filtros, paginación, agregados ORM y dominios de desglose |
 | `models/add_export.py` | Exportación autorizada de selección/filtro, XML original y ZIP |
 | `controllers/add.py` | Dos rutas POST con sesión, CSRF y autorización por solicitud |
-| `security/add_groups.xml`, `add_access.csv`, `add_rules.xml` | Grupos explícitos, ACL específicas y reglas globales |
+| `security/add_groups.xml`, `security/add/ir.model.access.csv`, `security/add_rules.xml` | Grupos explícitos, ACL específicas y reglas globales |
 | `views/add_views.xml`, `data/add_cron.xml` | Menú ADD, vistas nativas, concesiones y tareas periódicas |
 | `static/src/add/explorer.{js,xml,scss}`, `static/description/add_icon.svg` | Visor OWL, panel lateral, tablero, carga y estilos |
 | `tests/fixtures_add.py`, `test_add_offline.py`, `test_add_structure.py` | Casos sintéticos y verificaciones locales |
@@ -52,6 +52,12 @@ notificaciones y OWL de Odoo. No se reutilizan los flujos contables ni los permi
 amplios de otros módulos. Las ACL ADD no conceden acceso a `base.group_user`.
 
 ## Actualización en desarrollo (a cargo del usuario)
+
+La versión 19.0.4.0.1 corrige el error de actualización `KeyError: 'add_access'`:
+Odoo obtiene el modelo destino del nombre del CSV. Las ACL ADD se cargan desde
+`security/add/ir.model.access.csv`, después de sus grupos, conservando los mismos
+identificadores y permisos. El CSV de permisos anterior del asistente permanece
+independiente. También se distinguen las etiquetas de tipo CFDI, impuesto y relación.
 
 Usar una copia de pruebas con las dependencias existentes ya instaladas. Ejemplo
 con el ejecutable y configuración **de su instalación**, ajustando las rutas y

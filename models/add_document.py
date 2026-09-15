@@ -20,7 +20,7 @@ class AddDocument(models.Model):
     vault_id = fields.Integer(required=True, string='Referencia de almacenamiento privado')
     issued = fields.Boolean(index=True)
     received = fields.Boolean(index=True)
-    kind = fields.Selection([('I', 'I · Factura'), ('E', 'E · Ajuste'), ('P', 'P · Pago'), ('T', 'T · Traslado')], index=True)
+    kind = fields.Selection([('I', 'I · Factura'), ('E', 'E · Ajuste'), ('P', 'P · Pago'), ('T', 'T · Traslado')], string='Tipo de comprobante', index=True)
     version = fields.Char()
     series = fields.Char()
     folio = fields.Char()
@@ -232,7 +232,7 @@ class AddChild(models.AbstractModel):
     company_id = fields.Many2one(related='document_id.company_id', store=True, index=True)
     currency = fields.Char(related='document_id.currency', store=True)
     fiscal_date = fields.Date(related='document_id.fiscal_date', store=True, index=True)
-    document_kind = fields.Selection(related='document_id.kind', store=True)
+    document_kind = fields.Selection(related='document_id.kind', store=True, string='Tipo CFDI')
     original = fields.Json()
 
 
@@ -280,7 +280,7 @@ class AddTax(models.Model):
     application_id = fields.Many2one('som.add.application', ondelete='cascade')
     currency = fields.Char(related=None, compute='_compute_currency', store=True)
     level = fields.Selection([(k, v) for k, v in [('global', 'Global'), ('concept', 'Concepto'), ('local', 'Local'), ('payment', 'Pago'), ('application', 'Aplicación')]])
-    kind = fields.Selection([('transfer', 'Traslado'), ('withholding', 'Retención')])
+    kind = fields.Selection([('transfer', 'Traslado'), ('withholding', 'Retención')], string='Naturaleza del impuesto')
     tax = fields.Char(index=True)
     factor = fields.Char()
     rate = fields.Char()
@@ -328,6 +328,6 @@ class AddRelation(models.Model):
     _name = 'som.add.relation'
     _description = 'Relación fiscal por UUID'
     _inherit = 'som.add.child'
-    kind = fields.Char()
+    kind = fields.Char(string='Tipo de relación')
     target_uuid = fields.Char(index=True)
     target_id = fields.Many2one('som.add.document', ondelete='set null')
