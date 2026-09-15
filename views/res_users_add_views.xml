@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Compañías autorizadas ADD en la ficha del usuario (pestaña Permisos).
+         El campo existía en el modelo pero no en ninguna vista: sin él nadie
+         podía dar alcance ADD a un usuario y todo terminaba en "Compañía
+         fuera del alcance autorizado ADD". Solo lo ve/edita quien tiene
+         "ADD: gestión de accesos"; el modelo además exige administrar
+         usuarios (res.users._add_check_grant). -->
+    <record id="view_users_form_add_companies" model="ir.ui.view">
+        <field name="name">res.users.form.add.companies</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_ids'][not(ancestor::field)]" position="after">
+                <field name="add_company_ids"
+                       widget="many2many_tags"
+                       groups="account_statement_report.group_add_access"
+                       options="{'no_create': True}"
+                       domain="[('id', 'in', company_ids)]"
+                       help="Compañías cuyos documentos ADD puede consultar u operar este usuario. Debe incluir la compañía principal para trabajar en ella."/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
