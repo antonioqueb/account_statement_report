@@ -260,6 +260,15 @@ class AddConcept(models.Model):
     receiver_name = fields.Char(related='document_id.receiver_name', store=True)
     classification = fields.Char(related='document_id.classification', store=True)
     tax_ids = fields.One2many('som.add.tax', 'concept_id')
+    tax_filter = fields.Char(string='Impuesto', compute='_compute_tax_filter', search='_search_tax_filter')
+
+    @api.depends('tax_ids.tax')
+    def _compute_tax_filter(self):
+        for concept in self:
+            concept.tax_filter = ', '.join(sorted(set(concept.tax_ids.mapped('tax'))))
+
+    def _search_tax_filter(self, operator, value):
+        return [('tax_ids.tax', operator, value)]
 
 
 class AddTax(models.Model):

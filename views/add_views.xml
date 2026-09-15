@@ -300,7 +300,7 @@
         <field name="arch" type="xml">
             <search>
                 <filter name="fiscal_dates" string="Fecha fiscal" date="fiscal_date"/>
-                <field name="description" string="Impuesto (001/002/003)" filter_domain="[('tax_ids.tax', '=', self)]"/>
+                <field name="tax_filter" string="Impuesto (001/002/003)"/>
                 <field name="classification" string="Categoría"/>
                 <field name="receiver_name" string="Receptor"/>
                 <field name="receiver_rfc" string="RFC receptor"/>
