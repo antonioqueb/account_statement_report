@@ -223,7 +223,9 @@ export class AddExplorer extends Component {
             xhr.upload.onprogress = event => { if (event.lengthComputable && this.alive) this.state.fileProgress = Math.round(100 * event.loaded / event.total); };
             xhr.onload = () => {
                 let response;
-                try { response = JSON.parse(xhr.responseText); } catch { reject(new Error("La carga falló; revise el lote antes de reintentar.")); return; }
+                try { response = JSON.parse(xhr.responseText); } catch {
+                    reject(new Error(`La carga de "${file.name}" (${Math.round(file.size / 1048576)} MB) fue rechazada por el servidor (HTTP ${xhr.status}). Si el archivo supera el máximo configurado, divídalo en ZIP más pequeños.`)); return;
+                }
                 if (xhr.status >= 400 || response.error) reject(new Error(response.error || "Carga no autorizada."));
                 else resolve(response);
             };

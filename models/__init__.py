@@ -8,3 +8,4 @@ from . import add_document
 from . import add_import
 from . import add_analytics
 from . import add_export
+from . import add_http
