@@ -81,6 +81,17 @@ class TestAddBackend(TransactionCase):
         self.assertFalse(doc.active)
         self.assertTrue(self.model('som.add.audit', 'admin').search_count([('operation', '=', 'archive')]))
 
+    def test_context_defaults_cannot_invent_sat_or_batch_owner(self):
+        batches = self.model('som.add.batch').with_context(default_sat_state='valid', default_active=False,
+                                                          default_user_id=self.users['admin'].id, default_state='done')
+        batch = batches.browse(batches.begin(self.company.id, 'received'))
+        self.assertEqual(batch.user_id, self.users['operator'])
+        self.assertEqual(batch.state, 'pending')
+        batch._receive('context.xml', fx.invoice()); batch.seal(); batch.process_block()
+        doc = self.model('som.add.document').search([('batch_id', '=', batch.id)])
+        self.assertTrue(doc.active)
+        self.assertEqual(doc.sat_state, 'unknown')
+
     def test_admin_cannot_expand_grants_or_set_self_permissions(self):
         admin = self.users['admin'].with_user(self.users['admin'])
         with self.assertRaises(AccessError): admin.write({'add_company_ids': [Command.link(self.other.id)]})

@@ -51,7 +51,11 @@ class AddSecurity(models.AbstractModel):
         return scope
 
     def _internal(self):
-        return self.with_context(_add_capability=INTERNAL)
+        # RPC callers can send default_* context keys. They must never set SAT
+        # evidence, batch ownership/status, archived flags or rejected payloads
+        # through ORM default_get during our controlled creations.
+        context = {key: value for key, value in self.env.context.items() if not key.startswith('default_')}
+        return self.with_context(context, _add_capability=INTERNAL)
 
     def _is_internal(self):
         return self.env.context.get('_add_capability') is INTERNAL
