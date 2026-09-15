@@ -119,7 +119,9 @@
                             <h2>Relaciones fiscales</h2><p t-foreach="state.detail.relations" t-as="rel" t-key="rel.id"><t t-esc="rel.kind"/> · <t t-esc="rel.target_uuid"/> · <button t-if="rel.target_id" class="btn btn-sm btn-link" t-on-click="() => this.inspect(rel.target_id[0])">Ver documento cargado</button><strong t-else="">Pendiente: UUID no cargado</strong></p>
                         </t>
                         <t t-if="state.tab === 'complements'">
-                            <article t-foreach="parsed.complements" t-as="comp" t-key="comp_index" class="o_add_line"><h2><t t-esc="comp.name"/> <t t-esc="comp.version"/></h2><p t-esc="comp.specialized ? 'Datos estructurados presentes en el XML' : 'Complemento conservado; sin desglose especializado'"/><pre t-esc="pretty(comp.tree)"/></article>
+                            <article t-foreach="parsed.complements" t-as="comp" t-key="comp_index" class="o_add_line"><h2><t t-esc="comp.name"/> <t t-esc="comp.version"/></h2><p t-esc="comp.specialized ? 'Datos estructurados presentes en el XML' : 'Complemento conservado; sin desglose especializado'"/>
+                                <t t-if="comp.summary"><h3>Carta Porte: identificador, ubicaciones, transporte, mercancías y referencias presentes</h3><pre t-esc="pretty(comp.summary)"/></t><details><summary>Árbol completo de nodos y atributos</summary><pre t-esc="pretty(comp.tree)"/></details></article>
+                            <t t-if="parsed.extracted_references?.length"><h3>Referencias extraídas de descripciones · requieren revisión</h3><pre t-esc="pretty(parsed.extracted_references)"/></t>
                             <p t-if="!parsed.complements.length">Sin complementos adicionales.</p>
                         </t>
                         <t t-if="state.tab === 'xml'"><button t-if="state.boot.export" class="btn btn-outline-primary" t-on-click="() => this.exportFile('xml', true)">Descargar XML original</button><p>Representación de texto escapada. La descarga conserva exactamente los bytes originales.</p><pre class="o_add_xml" t-esc="state.detail.xml"/></t>

@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import re
 import time
+from collections import defaultdict
 from lxml import etree
 
 PARSER_VERSION = '1.0.0'
@@ -86,6 +87,8 @@ def parse(raw, company_rfc, direction, limits=None):
         raise Rejected('payroll', 'Nómina no admitida en ADD.')
     if kind not in ('I', 'E', 'P', 'T'):
         raise Rejected('unsupported', 'Tipo de comprobante no compatible.')
+    if any(key not in a for key in ('Fecha', 'Moneda', 'SubTotal', 'Total')):
+        raise Rejected('structure', 'Faltan atributos fiscales obligatorios.')
     def child(name):
         return root.find('{%s}%s' % (ns, name))
     emitter, receiver = child('Emisor'), child('Receptor')
@@ -100,7 +103,7 @@ def parse(raw, company_rfc, direction, limits=None):
         raise Rejected('company', 'RFC ajeno a la compañía del lote.')
     if not (issued if direction == 'issued' else received):
         raise Rejected('direction', 'Dirección incorrecta. Vuelva a cargar mediante la acción contraria.')
-    stamps = root.findall('.//{%s}TimbreFiscalDigital' % TFD)
+    stamps = root.findall('{%s}Complemento/{%s}TimbreFiscalDigital' % (ns, TFD))
     if len(stamps) != 1 or not UUID.fullmatch(stamps[0].get('UUID', '')):
         raise Rejected('stamp', 'Se requiere un único timbre con UUID válido.')
     stamp = dict(stamps[0].attrib)
@@ -155,8 +158,11 @@ def parse(raw, company_rfc, direction, limits=None):
             if uri == TFD:
                 continue
             specialized = uri in PAGOS or uri == LOCAL or (uri or '').startswith('http://www.sat.gob.mx/CartaPorte')
-            complements.append(dict(namespace=uri, name=name, version=node.get('Version', node.get('version', '')),
-                                    specialized=specialized, tree=tree(node)))
+            complement = dict(namespace=uri, name=name, version=node.get('Version', node.get('version', '')),
+                              specialized=specialized, tree=tree(node))
+            if (uri or '').startswith('http://www.sat.gob.mx/CartaPorte'):
+                complement['summary'] = carta_summary(node)
+            complements.append(complement)
             if uri in PAGOS:
                 if node.get('Version') != PAGOS[uri]:
                     raise Rejected('unsupported', 'Versión del complemento de pagos no compatible.')
@@ -167,6 +173,8 @@ def parse(raw, company_rfc, direction, limits=None):
                         number(val)
                 for p in node.findall('{%s}Pago' % uri):
                     attrs = dict(p.attrib)
+                    if not attrs.get('MonedaP') or not attrs.get('Monto'):
+                        raise Rejected('structure', 'Pago sin moneda o monto.')
                     fiscal_date(attrs.get('FechaPago'))
                     number(attrs.get('Monto'))
                     apps = []
@@ -209,6 +217,14 @@ def parse(raw, company_rfc, direction, limits=None):
     line_difference = sum((number(c['attributes'].get('Importe')) for c in concepts), Decimal(0)) - number(a.get('SubTotal'))
     if abs(line_difference) > max(Decimal('.02'), Decimal('.005') * len(concepts)):
         warnings.append('Diferencia entre conceptos y subtotal: %s.' % line_difference)
+    global_taxes, line_taxes = defaultdict(Decimal), defaultdict(Decimal)
+    for tax in taxes:
+        if tax['level'] in ('global', 'concept') and tax['amount'] is not None:
+            target = global_taxes if tax['level'] == 'global' else line_taxes
+            target[(tax['kind'], tax['tax'])] += number(tax['amount'])
+    for key, amount in global_taxes.items():
+        if key in line_taxes and abs(amount - line_taxes[key]) > max(Decimal('.02'), Decimal('.005') * len(concepts)):
+            warnings.append('Diferencia impuesto global / conceptos: %s %s.' % key)
     if not any(t['level'] == 'global' for t in taxes) and any(t['level'] == 'concept' for t in taxes):
         partial = True
     return dict(parser_version=PARSER_VERSION, sha256=hashlib.sha256(raw).hexdigest(), header=a, emitter=emitter,
@@ -216,6 +232,7 @@ def parse(raw, company_rfc, direction, limits=None):
                 fiscal_date=fiscal_date(a.get('Fecha')), concepts=concepts, taxes=taxes, payments=payments,
                 payment_totals_mxn=payment_totals, relations=relations, complements=complements,
                 warnings=warnings, difference=str(difference), tolerance=str(tolerance),
+                extracted_references=extracted_references(concepts),
                 consistency='partial' if partial else ('warning' if warnings else 'ok'))
 
 
@@ -223,3 +240,29 @@ def tree(node):
     """JSON text tree, never HTML; namespace identity is retained."""
     return dict(tag=node.tag, attributes=dict(node.attrib), text=node.text or '',
                 children=[tree(c) for c in node if isinstance(c.tag, str)])
+
+
+def carta_summary(node):
+    summary = dict(identifier=node.get('IdCCP'), locations=[], transport=[], goods=[], customs=[], containers=[])
+    mapping = {'Ubicacion': 'locations', 'Mercancia': 'goods', 'DocumentacionAduanera': 'customs',
+               'Pedimentos': 'customs', 'Contenedor': 'containers', 'Autotransporte': 'transport',
+               'TransporteMaritimo': 'transport', 'TransporteAereo': 'transport', 'TransporteFerroviario': 'transport'}
+    for child in node.iter():
+        if isinstance(child.tag, str):
+            key = mapping.get(etree.QName(child).localname)
+            if key:
+                summary[key].append(dict(child.attrib))
+    return summary
+
+
+def extracted_references(concepts):
+    result = []
+    for concept in concepts:
+        description = concept['attributes'].get('Descripcion', '')
+        for value in re.findall(r'\b[A-Z]{4}\d{7}\b', description.upper()):
+            result.append(dict(concept=concept['index'], type='contenedor', value=value,
+                               label='Referencia extraída del texto; requiere revisión'))
+        for value in re.findall(r'(?i)pedimento\s*[:#-]?\s*(\d{7,})\b', description):
+            result.append(dict(concept=concept['index'], type='referencia de pedimento', value=value,
+                               label='Referencia extraída; no acredita pedimento completo'))
+    return result
