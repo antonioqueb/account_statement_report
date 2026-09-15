@@ -32,6 +32,7 @@ class AddBatch(models.Model):
     pending_count = fields.Integer(compute='_counts')
     progress = fields.Float(compute='_counts')
 
+    @api.depends('item_ids.state')
     def _counts(self):
         counts = self.env['som.add.item']._read_group([('batch_id', 'in', self.ids)], ['batch_id', 'state'], ['__count'])
         mapping = {(batch.id, state): count for batch, state, count in counts}
@@ -56,15 +57,15 @@ class AddBatch(models.Model):
                                               company_id=company.id, direction=direction, user_id=self.env.uid))
         return batch.id
 
-    def _owner_guard(self):
+    def _owner_guard(self, allow_admin=False):
         self.ensure_one()
         self.check_access('read')
         self._guard('operator', self.company_id)
-        if self.user_id != self.env.user:
+        if self.user_id != self.env.user and not (allow_admin and self.env.user.has_group('account_statement_report.group_add_admin')):
             raise AccessError('Solo el usuario del lote puede cargar, procesar, reintentar o cancelarlo.')
 
-    def _lock(self):
-        self._owner_guard()
+    def _lock(self, allow_admin=False):
+        self._owner_guard(allow_admin=allow_admin)
         self.env.cr.execute('SELECT id FROM som_add_batch WHERE id = %s FOR UPDATE', [self.id])
         self.invalidate_recordset()
 
@@ -117,6 +118,12 @@ class AddBatch(models.Model):
                           'duplicate_count', 'rejected_count', 'failed_count', 'pending_count', 'progress'])[0]
 
     def process_block(self):
+        self.ensure_one()
+        if self.user_id != self.env.user:
+            self._owner_guard(allow_admin=True)
+            # Admin may resume an authorized batch, but cannot substitute their
+            # own privileges for its owner's current, revocable permissions.
+            return self.with_user(self.user_id).with_context(allowed_company_ids=[self.company_id.id]).process_block()
         self._lock()
         if self.state != 'processing' or not self.sealed:
             return self.status()
@@ -176,7 +183,7 @@ class AddBatch(models.Model):
         self.env['som.add.audit']._log(self.company_id, 'import', existing.uuid, result='duplicate' if same else 'conflict')
 
     def cancel(self):
-        self._lock()
+        self._lock(allow_admin=True)
         if self.state not in ('pending', 'processing', 'failed'):
             raise UserError('El lote ya finalizó.')
         self._internal().write({'state': 'cancelled', 'sealed': True, 'finished_at': fields.Datetime.now()})
@@ -184,12 +191,13 @@ class AddBatch(models.Model):
         return self.status()
 
     def retry(self):
-        self._lock()
+        self._lock(allow_admin=True)
         if self.state not in ('issues', 'failed', 'cancelled'):
             raise UserError('Solo se reintentan lotes con incidencias, fallidos o cancelados.')
         failed = self.env['som.add.item'].search([('batch_id', '=', self.id), ('state', '=', 'failed'), ('vault_id', '!=', False)])
         failed._internal().write({'state': 'pending', 'message': False})
         self._internal().write({'state': 'processing', 'sealed': True, 'finished_at': False})
+        self.env['som.add.audit']._log(self.company_id, 'reprocess', 'Lote %s' % self.id)
         return self.status()
 
     @api.model
@@ -234,7 +242,8 @@ class AddBatch(models.Model):
         # Technical retention worker. Never exposes content; only purges vaults
         # belonging to terminal/abandoned non-imported items, max 200 per run.
         cutoff = fields.Datetime.now() - timedelta(days=1)
-        items = self.env['som.add.item'].sudo().search([('vault_id', '!=', False), ('create_date', '<', cutoff)], limit=200)
+        items = self.env['som.add.item'].sudo().search([('vault_id', '!=', False), ('create_date', '<', cutoff),
+                                                       ('batch_id.state', '!=', 'processing')], limit=200)
         for item in items:
             cfg = self.env['som.add.config'].sudo().search([('company_id', '=', item.company_id.id)], limit=1)
             days = cfg.retention_days or 7

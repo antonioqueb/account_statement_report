@@ -180,7 +180,7 @@ class TestAddBackend(TransactionCase):
 
     def test_menu_and_public_portal_denial(self):
         root = self.env.ref(PREFIX + 'menu_add_root')
-        self.assertIn(self.env.ref(PREFIX + 'group_add_reader'), root.group_ids)
+        self.assertIn(self.env.ref(PREFIX + 'group_add_reader'), root['group_ids' if 'group_ids' in root._fields else 'groups_id'])
         doc = self.document()
         public = self.env.ref('base.public_user')
         with self.assertRaises(AccessError): doc.with_user(public).detail()

@@ -95,7 +95,11 @@ export class AddExplorer extends Component {
         if (key === "rfc") return this.isIssued ? row.receiver_rfc : row.emitter_rfc;
         if (key === "company_id") return row.company_id?.[1] || "—";
         if (key === "folio") return `${row.series || ""} ${row.folio || ""}`.trim();
-        if (AMOUNTS.has(key)) return this.fmt(row[key]);
+        if (AMOUNTS.has(key)) {
+            let digits = 2;
+            try { digits = new Intl.NumberFormat("es-MX", { style: "currency", currency: row.currency }).resolvedOptions().maximumFractionDigits; } catch { /* Preserve sensible display for unknown currency codes. */ }
+            return this.fmt(row[key], digits);
+        }
         if (["fiscal_date", "stamp_date", "create_date"].includes(key)) return this.date(row[key]);
         if (key === "sat_state") return SAT[row[key]];
         if (key === "consistency") return CONSISTENCY[row[key]];

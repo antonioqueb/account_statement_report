@@ -101,7 +101,7 @@ class AddDocument(models.Model):
         self._guard(company=self.company_id)
         self.check_access('read')
         # The only read elevation: a vault ID taken from an authorized document.
-        return base64.b64decode(self.env['som.add.vault'].sudo().browse(self.vault_id).data)
+        return base64.b64decode(self.env['som.add.vault'].sudo().with_context(bin_size=False).browse(self.vault_id).data)
 
     def detail(self):
         self.ensure_one()
