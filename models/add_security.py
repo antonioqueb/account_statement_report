@@ -178,4 +178,9 @@ class AddConfig(models.Model):
 
     def export_data(self, fields_to_export):
         self.env['som.add.document']._guard(extraction=True)
-        return super().export_data(fields_to_export)
+        result = super().export_data(fields_to_export)
+        from ..add_services.export import safe_cell
+        result['datas'] = [[safe_cell(cell) for cell in row] for row in result['datas']]
+        for company in self.company_id:
+            self.env['som.add.audit']._log(company, 'export', 'Configuración ADD', len(self))
+        return result
