@@ -1,53 +1,53 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <odoo>
   <record id="rule_add_document_scope" model="ir.rule">
     <field name="name">ADD document: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_document" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_document"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_concept_scope" model="ir.rule">
     <field name="name">ADD concept: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_concept" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_concept"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_tax_scope" model="ir.rule">
     <field name="name">ADD tax: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_tax" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_tax"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_payment_scope" model="ir.rule">
     <field name="name">ADD payment: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_payment" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_payment"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_application_scope" model="ir.rule">
     <field name="name">ADD application: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_application" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_application"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_relation_scope" model="ir.rule">
     <field name="name">ADD relation: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_relation" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_relation"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_batch_scope" model="ir.rule">
     <field name="name">ADD batch: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_batch" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_batch"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_item_scope" model="ir.rule">
     <field name="name">ADD item: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_item" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_item"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_audit_scope" model="ir.rule">
     <field name="name">ADD audit: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_audit" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_audit"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
   <record id="rule_add_config_scope" model="ir.rule">
     <field name="name">ADD config: intersección global de compañías</field>
-    <field name="model_id" ref="model_som_add_config" />
-    <field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
+    <field name="model_id" ref="model_som_add_config"/>
+    <field name="domain_force">[(1, '=', 0)] if user.share or not user.active else [('company_id', 'in', company_ids), ('company_id', 'in', user.company_ids.ids), ('company_id', 'in', user.add_company_ids.ids)]</field>
   </record>
 </odoo>

@@ -228,11 +228,11 @@ export class AddExplorer extends Component {
         try {
             const batchId = await this.orm.call("som.add.batch", "begin", [Number(this.state.uploadCompany), this.state.uploadDirection]);
             this.state.batch = { id: batchId, pending_count: 0, progress: 0 };
-            for (let i = 0; i < this.state.uploadFiles.length && this.alive; i++) {
+            for (let i = 0; i < this.state.uploadFiles.length && this.alive && this.state.batch.state !== "cancelled"; i++) {
                 this.state.uploadIndex = i + 1; this.state.fileProgress = 0;
                 this.state.batch = await this.uploadFile(batchId, this.state.uploadFiles[i]);
             }
-            if (!this.alive) return;
+            if (!this.alive || this.state.batch.state === "cancelled") return;
             this.state.batch = await this.orm.call("som.add.batch", "seal", [[batchId]]);
             while (this.alive && this.state.batch.state === "processing") {
                 this.state.batch = await this.orm.call("som.add.batch", "process_block", [[batchId]]);

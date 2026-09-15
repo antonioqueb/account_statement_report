@@ -26,7 +26,12 @@ class AddUsers(models.Model):
 
     def write(self, vals):
         self._add_check_grant(vals)
-        return super().write(vals)
+        result = super().write(vals)
+        if 'add_company_ids' in vals:
+            # ir.rule domains cache the evaluated company grant list. Revoke in
+            # this worker and signal the registry cache to other workers.
+            self.env.registry.clear_cache()
+        return result
 
 
 class AddSecurity(models.AbstractModel):
@@ -39,7 +44,7 @@ class AddSecurity(models.AbstractModel):
             raise AccessError('No tiene autorización ADD para esta operación.')
         # env.companies validates requested allowed_company_ids against Odoo grants.
         scope = user.company_ids & user.add_company_ids & self.env.companies
-        if not scope or (company and company not in scope):
+        if not scope or (company is not None and (not company.exists() or company not in scope)):
             raise AccessError('Compañía fuera del alcance autorizado ADD.')
         if extraction and not user.has_group(PREFIX + 'group_add_export'):
             raise AccessError('Se requiere ADD: exportar y descargar.')

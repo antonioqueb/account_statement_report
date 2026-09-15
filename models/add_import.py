@@ -198,13 +198,36 @@ class AddBatch(models.Model):
                     worker.process_block()
             except AccessError:
                 job._internal().write({'state': 'failed'})
+        # A subsequent transaction also resolves references that were inserted
+        # concurrently in different batches (neither transaction saw the other).
+        recent = self.sudo().search([('state', 'in', ['done', 'issues']),
+                                      ('finished_at', '>=', fields.Datetime.now() - timedelta(days=1))], limit=20, order='id desc')
+        seen = set()
+        for job in recent:
+            key = (job.user_id.id, job.company_id.id)
+            if key in seen:
+                continue
+            seen.add(key)
+            worker = job.with_user(job.user_id).with_context(allowed_company_ids=[job.company_id.id])
+            try:
+                with self.env.cr.savepoint():
+                    worker._owner_guard()
+                    for name in ('som.add.relation', 'som.add.application'):
+                        refs = worker.env[name].search([('target_id', '=', False)], limit=200, order='id desc')
+                        targets = worker.env['som.add.document'].with_context(active_test=False).search([('uuid', 'in', refs.mapped('target_uuid'))])
+                        by_uuid = {d.uuid: d.id for d in targets}
+                        for ref in refs:
+                            if ref.target_uuid in by_uuid:
+                                ref._internal().write({'target_id': by_uuid[ref.target_uuid]})
+            except AccessError:
+                continue
         # Transaction belongs to Odoo's scheduler; no arbitrary commits/threads.
 
     @api.model
     def _cron_cleanup(self):
         # Technical retention worker. Never exposes content; only purges vaults
         # belonging to terminal/abandoned non-imported items, max 200 per run.
-        cutoff = fields.Datetime.now() - timedelta(days=7)
+        cutoff = fields.Datetime.now() - timedelta(days=1)
         items = self.env['som.add.item'].sudo().search([('vault_id', '!=', False), ('create_date', '<', cutoff)], limit=200)
         for item in items:
             cfg = self.env['som.add.config'].sudo().search([('company_id', '=', item.company_id.id)], limit=1)
