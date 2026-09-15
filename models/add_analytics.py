@@ -7,7 +7,7 @@ from ..add_services.analytics import concentration
 LIST_FIELDS = ['uuid', 'company_id', 'fiscal_date', 'emitter_name', 'receiver_name', 'emitter_rfc', 'receiver_rfc',
                'series', 'folio', 'kind', 'currency', 'subtotal', 'discount', 'vat', 'withheld', 'total', 'method',
                'payment_form', 'complements', 'sat_state', 'consistency', 'batch_id', 'classification', 'reference',
-               'stamp_date', 'create_date', 'issued', 'received']
+               'stamp_date', 'create_date', 'issued', 'received', 'labels']
 
 
 class AddExplorer(models.Model):
@@ -57,6 +57,8 @@ class AddExplorer(models.Model):
                 domain &= Domain([(field, '=', int(value) if key == 'batch' else str(value)[:150])])
         if filters.get('complement'):
             domain &= Domain([('complements', 'ilike', str(filters['complement'])[:100])])
+        if filters.get('label'):
+            domain &= Domain([('labels', 'ilike', str(filters['label'])[:100])])
         if filters.get('tax'):
             domain &= Domain([('tax_ids.tax', '=', str(filters['tax'])[:30])])
         if filters.get('q'):
@@ -177,6 +179,10 @@ class AddExplorer(models.Model):
         for cur, code, unit, amount in self.env['som.add.concept']._read_group(concept_domain, ['currency', 'sat_code', 'unit_code'], ['amount:sum'], order='amount:sum DESC', limit=20):
             add('Conceptos · clave SAT y unidad (sin homologación de productos)', '%s · %s' % (code, unit), amount, cur,
                 concept_domain + [('currency', '=', cur), ('sat_code', '=', code), ('unit_code', '=', unit)], 'som.add.concept')
+        if filters.get('direction') in ('issued', 'received'):
+            for cur, category, rfc, amount in self.env['som.add.concept']._read_group(concept_domain, ['currency', 'classification', counterpart], ['amount:sum'], order='amount:sum DESC', limit=20):
+                add('Conceptos · categoría y contraparte (facturas I)', '%s · %s' % (category or 'Sin categoría', rfc), amount, cur,
+                    concept_domain + [('currency', '=', cur), ('classification', '=', category), (counterpart, '=', rfc)], 'som.add.concept')
         for field, value, label in [('sat_state', 'unknown', 'No consultados ante el SAT'), ('consistency', 'warning', 'Con alertas'), ('consistency', 'partial', 'Validación parcial')]:
             drill = domain + [(field, '=', value)]
             add('Calidad documental', label, docs.search_count(drill), 'documentos', drill)

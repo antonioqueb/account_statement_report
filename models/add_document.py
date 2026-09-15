@@ -64,6 +64,7 @@ class AddDocument(models.Model):
     notes = fields.Text(string='Notas administrativas')
     reference = fields.Char(string='Referencia administrativa')
     classification = fields.Char(string='Categoría administrativa', index=True)
+    labels = fields.Char(string='Etiquetas (separadas por coma)', size=500)
     concept_ids = fields.One2many('som.add.concept', 'document_id')
     tax_ids = fields.One2many('som.add.tax', 'document_id')
     payment_ids = fields.One2many('som.add.payment', 'document_id')
@@ -108,7 +109,7 @@ class AddDocument(models.Model):
         self._guard(company=self.company_id)
         self.check_access('read')
         data = self.read(['uuid', 'company_id', 'batch_id', 'filename', 'sha256', 'parser_version', 'create_date',
-                          'create_uid', 'notes', 'reference', 'classification', 'sat_state', 'sat_checked_at', 'sat_source',
+                          'create_uid', 'notes', 'reference', 'classification', 'labels', 'sat_state', 'sat_checked_at', 'sat_source',
                           'sat_error', 'alerts', 'parsed', 'active', 'archive_reason'])[0]
         # Unicode for display only. Download always returns the exact original bytes.
         raw = self._raw()
@@ -123,7 +124,7 @@ class AddDocument(models.Model):
     def write(self, vals):
         if self._is_internal():
             return super().write(vals)
-        if set(vals) - {'notes', 'reference', 'classification'}:
+        if set(vals) - {'notes', 'reference', 'classification', 'labels'}:
             raise AccessError('El XML original y los datos fiscales son inmutables por RPC.')
         self.check_access('write')
         for doc in self:
@@ -253,6 +254,12 @@ class AddConcept(models.Model):
     discount = fields.Float(digits=(24, 6))
     tax_object = fields.Char()
     commercial = fields.Boolean(index=True)
+    emitter_rfc = fields.Char(related='document_id.emitter_rfc', store=True)
+    emitter_name = fields.Char(related='document_id.emitter_name', store=True)
+    receiver_rfc = fields.Char(related='document_id.receiver_rfc', store=True)
+    receiver_name = fields.Char(related='document_id.receiver_name', store=True)
+    classification = fields.Char(related='document_id.classification', store=True)
+    tax_ids = fields.One2many('som.add.tax', 'concept_id')
 
 
 class AddTax(models.Model):

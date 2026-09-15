@@ -247,6 +247,11 @@
             <list create="0" edit="0" delete="0">
                 <field name="company_id" string="Compañía"/>
                 <field name="document_id" string="Documento"/>
+                <field name="classification" string="Categoría" optional="show"/>
+                <field name="receiver_name" string="Receptor" optional="hide"/>
+                <field name="receiver_rfc" string="RFC receptor" optional="hide"/>
+                <field name="emitter_name" string="Emisor" optional="show"/>
+                <field name="emitter_rfc" string="RFC emisor" optional="show"/>
                 <field name="fiscal_date" string="Fecha"/>
                 <field name="sat_code" string="Clave SAT"/>
                 <field name="description" string="Descripción"/>
@@ -269,6 +274,11 @@
                     <group>
                         <field name="company_id" string="Compañía"/>
                         <field name="document_id" string="Documento"/>
+                        <field name="classification" string="Categoría"/>
+                        <field name="receiver_name" string="Receptor"/>
+                        <field name="receiver_rfc" string="RFC receptor"/>
+                        <field name="emitter_name" string="Emisor"/>
+                        <field name="emitter_rfc" string="RFC emisor"/>
                         <field name="fiscal_date" string="Fecha"/>
                         <field name="sat_code" string="Clave SAT"/>
                         <field name="description" string="Descripción"/>
@@ -289,6 +299,13 @@
         <field name="model">som.add.concept</field>
         <field name="arch" type="xml">
             <search>
+                <filter name="fiscal_dates" string="Fecha fiscal" date="fiscal_date"/>
+                <field name="description" string="Impuesto (001/002/003)" filter_domain="[('tax_ids.tax', '=', self)]"/>
+                <field name="classification" string="Categoría"/>
+                <field name="receiver_name" string="Receptor"/>
+                <field name="receiver_rfc" string="RFC receptor"/>
+                <field name="emitter_name" string="Emisor"/>
+                <field name="emitter_rfc" string="RFC emisor"/>
                 <field name="company_id" string="Compañía"/>
                 <field name="document_id" string="Documento"/>
                 <field name="sat_code" string="Clave SAT"/>
@@ -300,6 +317,10 @@
                     <filter name="group_sat_code" string="Clave SAT" context="{'group_by':'sat_code'}"/>
                     <filter name="group_unit_code" string="Unidad SAT" context="{'group_by':'unit_code'}"/>
                     <filter name="group_currency" string="Moneda" context="{'group_by':'currency'}"/>
+                    <filter name="group_emitter_rfc" string="Emisor" context="{'group_by':'emitter_rfc'}"/>
+                    <filter name="group_receiver_rfc" string="Receptor" context="{'group_by':'receiver_rfc'}"/>
+                    <filter name="group_classification" string="Categoría" context="{'group_by':'classification'}"/>
+                    <filter name="group_fiscal_date_month" string="Mes fiscal" context="{'group_by':'fiscal_date:month'}"/>
                 </group>
             </search>
         </field>

@@ -8,7 +8,7 @@ const COLUMNS = [
     ["folio", "Serie / folio"], ["kind", "Tipo"], ["currency", "Moneda"], ["subtotal", "Subtotal"],
     ["discount", "Descuento"], ["vat", "IVA global"], ["withheld", "Retenciones"], ["total", "Total"],
     ["method", "Método"], ["complements", "Complementos"], ["sat_state", "Estado SAT"], ["consistency", "Consistencia"],
-    ["uuid", "UUID"], ["stamp_date", "Timbrado"], ["create_date", "Carga"], ["reference", "Referencia"], ["classification", "Categoría"],
+    ["uuid", "UUID"], ["stamp_date", "Timbrado"], ["create_date", "Carga"], ["reference", "Referencia"], ["classification", "Categoría"], ["labels", "Etiquetas"],
 ];
 const AMOUNTS = new Set(["subtotal", "discount", "vat", "withheld", "total"]);
 const SAT = { unknown: "No consultado", valid: "Vigencia confirmada", cancelled: "Cancelado confirmado", not_found: "No encontrado", error: "Error de consulta" };
@@ -30,7 +30,7 @@ export class AddExplorer extends Component {
         this.state = useState({
             boot: { companies: [] }, filters: { companies: [], direction: this.mode === "dashboard" ? "received" : this.mode,
                 q: "", start: "", end: "", currency: "", kind: "", method: "", form: "", use: "", complement: "", tax: "",
-                sat: "", consistency: "", batch: "", classification: "", date_basis: "fiscal_date", measure: "base", valid_only: false, archived: false,
+                sat: "", consistency: "", batch: "", classification: "", label: "", date_basis: "fiscal_date", measure: "base", valid_only: false, archived: false,
                 net: false, mxn: false, compare: false },
             rows: [], count: 0, totals: [], domain: [], dashboard: null, offset: 0, limit: 50,
             order: "fiscal_date desc, id desc", selected: [], detail: null, tab: "summary", fullscreen: false,
@@ -276,7 +276,7 @@ export class AddExplorer extends Component {
     async saveNotes() {
         const d = this.state.detail;
         try {
-            await this.orm.write("som.add.document", [d.id], { notes: d.notes || "", reference: d.reference || "", classification: d.classification || "" });
+            await this.orm.write("som.add.document", [d.id], { notes: d.notes || "", reference: d.reference || "", classification: d.classification || "", labels: d.labels || "" });
             this.notification.add("Clasificación guardada y auditada.", { type: "success" });
         } catch (error) { this.fail(error); }
     }
