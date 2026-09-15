@@ -2,7 +2,7 @@
 
 ## Alcance y estado de verificación
 
-Implementado dentro de **`Ventas/account_statement_report`**, versión **19.0.4.0.1**.
+Implementado dentro de **`Ventas/account_statement_report`**, versión **19.0.4.0.2**.
 El addon conserva sus dependencias y reportes anteriores, y continúa con
 `application=False`. ADD es un menú raíz independiente con icono propio.
 No se creó otro addon ni otro manifiesto.
@@ -18,7 +18,7 @@ pagos contables, pedidos, contactos, productos o movimientos de inventario. Las
 relaciones son exclusivamente entre XML de la misma compañía. No incluye
 conectores SAT, e.firma, notificaciones, correo, portal ni servicios externos.
 
-Se ejecutaron **26 pruebas del parser/archivos/exportadores y 7 comprobaciones
+Se ejecutaron **26 pruebas del parser/archivos/exportadores y 8 comprobaciones
 estáticas**, con resultado satisfactorio. Se incluye una suite de **16 pruebas
 Odoo** pendiente de ejecución en la instalación del usuario. No se presenta la
 seguridad de las rutas HTTP, la concurrencia PostgreSQL ni la interfaz como
@@ -52,6 +52,13 @@ notificaciones y OWL de Odoo. No se reutilizan los flujos contables ni los permi
 amplios de otros módulos. Las ACL ADD no conceden acceso a `base.group_user`.
 
 ## Actualización en desarrollo (a cargo del usuario)
+
+La versión 19.0.4.0.2 corrige el dominio de denegación de las diez reglas globales
+ADD: usa `[('id', 'in', [])]` para usuarios compartidos o inactivos. El motor
+Domain de la instalación rechazó la hoja numérica `(1, '=', 0)`. Se conservan
+las tres condiciones de intersección de compañías. Una regresión local evalúa
+ambas ramas y ocho escenarios de permisos por regla (80 casos); no sustituye
+la validación del compilador Domain durante la actualización real de Odoo.
 
 La versión 19.0.4.0.1 corrige el error de actualización `KeyError: 'add_access'`:
 Odoo obtiene el modelo destino del nombre del CSV. Las ACL ADD se cargan desde

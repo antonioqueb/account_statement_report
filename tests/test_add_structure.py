@@ -3,6 +3,7 @@ import ast
 import csv
 from pathlib import Path
 import re
+from types import SimpleNamespace
 import unittest
 from lxml import etree as E
 
@@ -13,7 +14,7 @@ class StructureTests(unittest.TestCase):
     def test_manifest_dependencies_and_all_files_exist(self):
         manifest = ast.literal_eval((ROOT / '__manifest__.py').read_text())
         self.assertFalse(manifest['application'])
-        self.assertEqual(manifest['version'], '19.0.4.0.1')
+        self.assertEqual(manifest['version'], '19.0.4.0.2')
         for dependency in ('sale', 'account', 'stock', 'sale_delivery_wizard', 'sale_order_extended_metrics'):
             self.assertIn(dependency, manifest['depends'])
         for name in manifest['data']:
@@ -32,6 +33,43 @@ class StructureTests(unittest.TestCase):
         for element in rules.xpath('//field[@name="domain_force"]'):
             for term in ('company_ids', 'user.company_ids.ids', 'user.add_company_ids.ids', 'user.share'):
                 self.assertIn(term, element.text)
+
+    def test_rule_branches_deny_and_intersect_company_grants(self):
+        """Evaluate both XML branches; checking XML syntax alone misses this bug.
+
+        This checks expression shape and authorization logic without claiming to
+        execute Odoo's Domain compiler. Expressions are trusted repository data.
+        """
+        rules = E.parse(str(ROOT / 'security/add_rules.xml'))
+        cases = [
+            # share, active, Odoo companies, ADD grants, context companies, result
+            (True, True, [1, 2], [1, 2], [1, 2], set()),
+            (False, False, [1, 2], [1, 2], [1, 2], set()),
+            (True, False, [1, 2], [1, 2], [1, 2], set()),
+            (False, True, [1, 2], [2, 3], [1, 2, 3], {2}),
+            (False, True, [1, 2], [], [1, 2], set()),
+            (False, True, [1, 2], [2], [1], set()),
+            (False, True, [1], [1, 99], [99], set()),
+            (False, True, [1, 2], [1, 2], [], set()),
+        ]
+        for element in rules.xpath('//field[@name="domain_force"]'):
+            for share, active, odoo_ids, add_ids, context_ids, expected in cases:
+                with self.subTest(rule=element.getparent().get('id'), share=share,
+                                  active=active, companies=context_ids):
+                    user = SimpleNamespace(share=share, active=active,
+                        company_ids=SimpleNamespace(ids=odoo_ids),
+                        add_company_ids=SimpleNamespace(ids=add_ids))
+                    domain = eval(compile(element.text, '<ADD rule>', 'eval'),
+                                  {'__builtins__': {}}, {'user': user, 'company_ids': context_ids})
+                    for field, operator, values in domain:
+                        self.assertIsInstance(field, str, 'Use campos reales, no hojas con campo numérico')
+                        self.assertIn(field, ('id', 'company_id'))
+                        self.assertEqual(operator, 'in')
+                        self.assertIsInstance(values, list)
+                    allowed = {company for company in (1, 2, 3, 99)
+                               if all((company if field == 'company_id' else 100 + company) in values
+                                      for field, operator, values in domain)}
+                    self.assertEqual(allowed, expected)
 
     def test_no_implicit_grants_no_vault_acl(self):
         with (ROOT / 'security/add/ir.model.access.csv').open() as stream:
