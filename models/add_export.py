@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from io import BytesIO
 import zipfile
 from odoo import api, models
@@ -51,7 +52,7 @@ class AddExport(models.Model):
             filename = safe_name(docs.uuid) + '.xml' if format == 'xml' else 'ADD-originales.zip'
         else:
             selected = [(k, label) for k, label in HEADERS if not columns or k in columns or k in ('uuid', 'company_id', 'currency', 'perspective')]
-            headers = [label for _, label in selected] + ['Filtro temporal / alcance', 'Conversión']
+            headers = [label for _, label in selected] + ['Filtro temporal / alcance', 'Conversión', 'Encabezado fiscal original (precisión exacta)']
             rows = []
             context_text = json.dumps(filters, ensure_ascii=False, sort_keys=True)
             sat_labels = dict(self._fields['sat_state'].selection)
@@ -65,11 +66,11 @@ class AddExport(models.Model):
                     elif key == 'sat_state':
                         value = sat_labels[doc.sat_state]
                     elif key in ('subtotal', 'discount', 'total'):
-                        value = doc.parsed['header'].get({'subtotal': 'SubTotal', 'discount': 'Descuento', 'total': 'Total'}[key], '0')
+                        value = Decimal(doc.parsed['header'].get({'subtotal': 'SubTotal', 'discount': 'Descuento', 'total': 'Total'}[key], '0'))
                     else:
                         value = doc[key]
                     row.append(value)
-                rows.append(row + [context_text, 'Sin conversión; moneda original del XML'])
+                rows.append(row + [context_text, 'Sin conversión; moneda original del XML', json.dumps(doc.parsed['header'], ensure_ascii=False)])
             if format == 'csv':
                 body, mime, filename = csv_bytes(headers, rows), 'text/csv; charset=utf-8', 'ADD-documentos.csv'
             else:

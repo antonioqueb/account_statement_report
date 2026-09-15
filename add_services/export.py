@@ -1,6 +1,8 @@
 """Small dependency-free tabular writers; Excel cells are literals, never formulas."""
 import csv
+from decimal import Decimal
 from io import BytesIO, StringIO
+import re
 import zipfile
 from xml.sax.saxutils import escape
 
@@ -35,7 +37,14 @@ def xlsx_bytes(sheets):
             with archive.open('xl/worksheets/sheet%d.xml' % index, 'w') as stream:
                 stream.write(('<worksheet xmlns="%s"><sheetData>' % ns).encode())
                 for row in [headers] + rows:
-                    cells = ''.join('<c t="inlineStr"><is><t xml:space="preserve">%s</t></is></c>' % escape(str(safe_cell(v))) for v in row)
+                    cells = []
+                    for value in row:
+                        if type(value) in (int, float, Decimal):
+                            cells.append('<c t="n"><v>%s</v></c>' % value)
+                        else:
+                            literal = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', str(safe_cell(value)))
+                            cells.append('<c t="inlineStr"><is><t xml:space="preserve">%s</t></is></c>' % escape(literal))
+                    cells = ''.join(cells)
                     stream.write(('<row>' + cells + '</row>').encode('utf-8'))
                 stream.write(b'</sheetData></worksheet>')
         archive.writestr('[Content_Types].xml', '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' + ''.join(types) + '</Types>')

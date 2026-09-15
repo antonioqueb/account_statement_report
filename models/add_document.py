@@ -173,7 +173,8 @@ class AddDocument(models.Model):
             line_ids[line['index']] = record.id
         def tax_values(tax, **extra):
             return dict(common, level=tax['level'], kind=tax['kind'], tax=tax['tax'], factor=tax['factor'],
-                        rate=tax['rate'], base=float(cfdi.number(tax['base'])), amount=float(cfdi.number(tax['amount'])),
+                        rate=format(cfdi.number(tax['rate']).normalize(), 'f') if tax['rate'] is not None else False,
+                        base=float(cfdi.number(tax['base'])), amount=float(cfdi.number(tax['amount'])),
                         original=tax['raw'], **extra)
         taxes = [tax_values(t, concept_id=line_ids.get(t['concept_index'])) for t in parsed['taxes']]
         for pay in parsed['payments']:
@@ -248,6 +249,7 @@ class AddTax(models.Model):
     concept_id = fields.Many2one('som.add.concept', ondelete='cascade', index=True)
     payment_id = fields.Many2one('som.add.payment', ondelete='cascade')
     application_id = fields.Many2one('som.add.application', ondelete='cascade')
+    currency = fields.Char(related=None, compute='_compute_currency', store=True)
     level = fields.Selection([(k, v) for k, v in [('global', 'Global'), ('concept', 'Concepto'), ('local', 'Local'), ('payment', 'Pago'), ('application', 'Aplicación')]])
     kind = fields.Selection([('transfer', 'Traslado'), ('withholding', 'Retención')])
     tax = fields.Char(index=True)
@@ -255,6 +257,11 @@ class AddTax(models.Model):
     rate = fields.Char()
     base = fields.Float(digits=(24, 6))
     amount = fields.Float(digits=(24, 6))
+
+    @api.depends('application_id.currency', 'payment_id.currency', 'document_id.currency')
+    def _compute_currency(self):
+        for tax in self:
+            tax.currency = tax.application_id.currency or tax.payment_id.currency or tax.document_id.currency
 
 
 class AddPayment(models.Model):
