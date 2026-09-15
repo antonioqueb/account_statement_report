@@ -238,7 +238,7 @@ def parse(raw, company_rfc, direction, limits=None):
 
 def tree(node):
     """JSON text tree, never HTML; namespace identity is retained."""
-    return dict(tag=node.tag, attributes=dict(node.attrib), text=node.text or '',
+    return dict(tag=node.tag, attributes=dict(node.attrib), text=node.text or '', tail=node.tail or '',
                 children=[tree(c) for c in node if isinstance(c.tag, str)])
 
 

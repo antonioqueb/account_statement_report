@@ -45,11 +45,11 @@
             <label>Vistas privadas de este navegador<select class="form-select" t-on-change="restoreView"><option value="">Elegir vista</option><option t-foreach="state.saved" t-as="v" t-key="v_index" t-att-value="v_index" t-esc="v.name"/></select></label>
             <label>Guardar filtros<input class="form-control" t-model="state.saveName" placeholder="Nombre de vista privada"/></label><button class="btn btn-light" t-on-click="saveView">Guardar vista</button>
         </section>
-        <p class="o_add_scope"><strong t-esc="state.filters.direction === 'issued' ? 'Emitidos' : state.filters.direction === 'received' ? 'Recibidos' : 'Ambas perspectivas'"/> · <t t-esc="state.filters.start || 'Inicio'"/> a <t t-esc="state.filters.end || 'hoy'"/> · <t t-esc="state.filters.currency || 'monedas separadas'"/> · <t t-esc="state.filters.valid_only ? 'Vigencia confirmada' : 'Todos los documentos cargados; vigencia no presumida'"/></p>
+        <p class="o_add_scope"><strong t-esc="state.filters.direction === 'issued' ? 'Emitidos' : state.filters.direction === 'received' ? 'Recibidos' : 'Ambas perspectivas'"/> · <t t-esc="state.filters.start || 'Sin límite inicial'"/> a <t t-esc="state.filters.end || 'sin límite final'"/> · <t t-esc="state.filters.currency || 'monedas separadas'"/> · <t t-esc="state.filters.valid_only ? 'Vigencia confirmada' : 'Todos los documentos cargados; vigencia no presumida'"/></p>
         <div t-if="state.busy" class="o_add_loading" role="status">Consultando datos autorizados…</div>
 
         <t t-if="mode === 'dashboard' and state.dashboard">
-            <div class="o_add_notice"><t t-esc="state.dashboard.notice"/><br/>Actualizado: <t t-esc="state.dashboard.updated_at"/> (hora de servidor). Pagos por FechaPago; incidencias por carga. Meses de borde pueden estar incompletos.</div>
+            <div class="o_add_notice"><t t-esc="state.dashboard.notice"/><br/>Actualizado: <t t-esc="state.dashboard.updated_at"/> (UTC). Pagos por FechaPago; incidencias por carga. Meses de borde pueden estar incompletos.</div>
             <div class="o_add_dashboard">
                 <section t-foreach="sections" t-as="section" t-key="section.name" class="o_add_chart">
                     <h2 t-esc="section.name"/>
