@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """Carga ADD: tope de memoria del formulario multipart.
 
-Odoo 19 fija `httprequest.max_form_memory_size = 10 MB` y werkzeug 3.0.1
-aplica ese tope al cuerpo multipart completo (archivos incluidos), con el
-parseo en modo silencioso: un ZIP mayor a 10 MB deja el formulario VACÍO,
-Odoo no encuentra csrf_token y responde 400 "Session expired (invalid CSRF
-token)" aunque la sesión esté viva. Aquí, antes de que el dispatcher lea
-los parámetros, el tope sube al máximo real de carga de ADD (50 MiB, el
-mismo client_max_body_size de nginx)."""
+Odoo 19 fija `httprequest.max_form_memory_size = 10 MB`; werkzeug 3.0.1 no
+lo aplica a los archivos (verificado el 15 sep 2026 con un cuerpo de 12 MB),
+pero parsea en modo silencioso: cualquier cuerpo multipart INCOMPLETO
+(archivo que cambió o seguía escribiéndose durante el envío) deja el
+formulario vacío, Odoo no encuentra csrf_token y responde 400 "Session
+expired (invalid CSRF token)" con la sesión viva. Ese fue el caso de los
+lotes de XML recibidos del 15 sep. Subir el tope aquí es defensivo: deja
+holgura real hasta el máximo de carga de ADD (50 MiB, el
+client_max_body_size de nginx) sin depender del default de Odoo."""
 from odoo import models
 from odoo.http import request
 
