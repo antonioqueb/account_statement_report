@@ -15,9 +15,9 @@ class AddExplorer(models.Model):
 
     @api.model
     def bootstrap(self):
-        scope = self._guard()
+        scope = self._guard(company=self.env.company)
         return dict(companies=[{'id': c.id, 'name': c.name} for c in scope],
-                    company_id=self.env.company.id if self.env.company in scope else scope[:1].id,
+                    company_id=self.env.company.id,
                     operator=self.env.user.has_group('account_statement_report.group_add_operator'),
                     admin=self.env.user.has_group('account_statement_report.group_add_admin'),
                     export=self.env.user.has_group('account_statement_report.group_add_export'), uid=self.env.uid,
@@ -27,6 +27,8 @@ class AddExplorer(models.Model):
     def _filter_domain(self, filters, economic=False, dates=True, currency=True):
         scope = self._guard()
         filters = filters or {}
+        if filters.get('start') and filters.get('end') and filters['start'] > filters['end']:
+            raise UserError('La fecha inicial no puede ser posterior a la final.')
         companies = filters.get('companies') or [self.env.company.id]
         if not isinstance(companies, list) or any(type(c) is not int or c not in scope.ids for c in companies):
             raise UserError('Seleccione únicamente compañías activas y autorizadas ADD.')
@@ -89,22 +91,47 @@ class AddExplorer(models.Model):
         def add(section, label, value, unit, drill, model='som.add.document', **extra):
             rows.append(dict(section=section, label=str(label or 'Sin dato'), value=value, unit=unit or '', domain=drill, model=model, **extra))
         count = docs.search_count(domain)
+        date_field = filters.get('date_basis', 'fiscal_date')
+        date_label = {'fiscal_date': 'fecha fiscal', 'stamp_date': 'timbrado', 'create_date': 'carga'}[date_field]
         add('Volumen documental', 'CFDI únicos', count, 'documentos', domain)
-        for kind, month, n in docs._read_group(domain, ['kind', 'fiscal_date:month'], ['__count']):
+        for kind, month, n in docs._read_group(domain, ['kind', date_field + ':month'], ['__count']):
             start = str(month)[:10] if month else False
             end = (month.replace(day=28) + timedelta(days=4)).replace(day=1) if month else False
-            drill = domain + [('kind', '=', kind)] + ([('fiscal_date', '>=', start), ('fiscal_date', '<', str(end)[:10])] if month else [])
-            add('Volumen por mes y tipo', '%s · %s' % (str(month)[:7], kind), n, 'documentos', drill)
+            drill = domain + [('kind', '=', kind)] + ([(date_field, '>=', start), (date_field, '<', str(end)[:10])] if month else [(date_field, '=', False)])
+            add('Volumen por mes y tipo · ' + date_label, '%s · %s' % (str(month)[:7], kind), n, 'documentos', drill)
         measure = filters.get('measure', 'base')
         if measure not in ('base', 'total'):
             raise UserError('Medida no permitida.')
         for cur, kind, total, base, n in docs._read_group(economic + [('kind', 'in', ['I', 'E'])], ['currency', 'kind'], ['total:sum', 'base:sum', '__count']):
             add('Facturación y ajustes', '%s · %s' % (kind, cur), total if measure == 'total' else base, cur,
                 economic + [('kind', '=', kind), ('currency', '=', cur)], count=n)
-        for cur, kind, month, amount in docs._read_group(economic + [('kind', 'in', ['I', 'E'])], ['currency', 'kind', 'fiscal_date:month'], [measure + ':sum']):
+        if filters.get('net'):
+            for cur, amount in docs._read_group(economic + [('kind', 'in', ['I', 'E'])], ['currency'], ['net_base:sum']):
+                add('Base neta documental I − E · no es utilidad', cur, amount, cur,
+                    economic + [('kind', 'in', ['I', 'E']), ('currency', '=', cur)])
+        if filters.get('mxn'):
+            converted = economic + [('kind', 'in', ['I', 'E']), ('mxn_available', '=', True)]
+            for kind, source, amount, n in docs._read_group(converted, ['kind', 'conversion_source'], [measure + '_mxn:sum', '__count']):
+                add('Comparación analítica MXN · conversión histórica', '%s · %s' % (kind, source), amount, 'MXN',
+                    converted + [('kind', '=', kind), ('conversion_source', '=', source)], count=n)
+            excluded = economic + [('kind', 'in', ['I', 'E']), ('mxn_available', '=', False)]
+            add('Comparación analítica MXN · conversión histórica', 'Excluidos por falta de tipo de cambio', docs.search_count(excluded), 'documentos', excluded)
+        if filters.get('compare') and filters.get('start') and filters.get('end'):
+            start, end = date.fromisoformat(filters['start']), date.fromisoformat(filters['end'])
+            days = (end - start).days + 1
+            previous_filters = dict(filters, start=str(start - timedelta(days=days)), end=str(start - timedelta(days=1)))
+            previous = self._filter_domain(previous_filters, economic=True) + [('kind', 'in', ['I', 'E'])]
+            for cur, kind, amount in docs._read_group(previous, ['currency', 'kind'], [measure + ':sum']):
+                add('Periodo anterior de igual duración · %s a %s' % (previous_filters['start'], previous_filters['end']),
+                    kind, amount, cur, previous + [('kind', '=', kind), ('currency', '=', cur)])
+        for cur, kind, month, amount in docs._read_group(economic + [('kind', 'in', ['I', 'E'])], ['currency', 'kind', date_field + ':month'], [measure + ':sum']):
+            if not month:
+                add('Evolución mensual · ' + date_label, 'Sin fecha · ' + kind, amount, cur,
+                    economic + [('currency', '=', cur), ('kind', '=', kind), (date_field, '=', False)])
+                continue
             end = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
-            add('Evolución mensual · fecha fiscal', '%s · %s' % (str(month)[:7], kind), amount, cur,
-                economic + [('currency', '=', cur), ('kind', '=', kind), ('fiscal_date', '>=', str(month)[:10]), ('fiscal_date', '<', str(end)[:10])])
+            add('Evolución mensual · ' + date_label, '%s · %s' % (str(month)[:7], kind), amount, cur,
+                economic + [('currency', '=', cur), ('kind', '=', kind), (date_field, '>=', str(month)[:10]), (date_field, '<', str(end)[:10])])
         # I and E stay separate; no currency or sign ambiguity in concentration.
         counterpart = 'receiver_rfc' if filters.get('direction') == 'issued' else 'emitter_rfc'
         if filters.get('direction') in ('issued', 'received'):
@@ -124,13 +151,13 @@ class AddExplorer(models.Model):
         # Domain('document_id', 'any', ...) compiles a subquery with ORM security,
         # avoiding a 100k-ID list or repeated invoice totals through joins.
         tax_domain = [('document_id', 'any', economic), ('level', 'in', ['global', 'local'])]
-        for cur, kind, tax, amount in self.env['som.add.tax']._read_group(tax_domain, ['currency', 'kind', 'tax'], ['amount:sum']):
-            add('Impuestos globales documentados', '%s · %s' % (kind, tax), amount, cur,
-                tax_domain + [('currency', '=', cur), ('kind', '=', kind), ('tax', '=', tax)], 'som.add.tax')
+        for cur, doc_kind, kind, tax, amount in self.env['som.add.tax']._read_group(tax_domain, ['currency', 'document_kind', 'kind', 'tax'], ['amount:sum']):
+            add('Impuestos globales documentados', '%s · %s · %s' % (doc_kind, kind, tax), amount, cur,
+                tax_domain + [('currency', '=', cur), ('document_kind', '=', doc_kind), ('kind', '=', kind), ('tax', '=', tax)], 'som.add.tax')
         line_domain = [('document_id', 'any', economic), ('level', '=', 'concept')]
-        for cur, kind, tax, factor, rate, amount in self.env['som.add.tax']._read_group(line_domain, ['currency', 'kind', 'tax', 'factor', 'rate'], ['amount:sum']):
-            add('Impuestos por tasa · comprobación de conceptos', '%s · %s · %s · %s' % (kind, tax, factor or 'Sin factor', rate if rate is not False else 'Sin tasa'), amount, cur,
-                line_domain + [('currency', '=', cur), ('kind', '=', kind), ('tax', '=', tax), ('factor', '=', factor), ('rate', '=', rate)], 'som.add.tax')
+        for cur, doc_kind, kind, tax, factor, rate, amount in self.env['som.add.tax']._read_group(line_domain, ['currency', 'document_kind', 'kind', 'tax', 'factor', 'rate'], ['amount:sum']):
+            add('Impuestos por tasa · comprobación de conceptos', '%s · %s · %s · %s · %s' % (doc_kind, kind, tax, factor or 'Sin factor', rate if rate is not False else 'Sin tasa'), amount, cur,
+                line_domain + [('currency', '=', cur), ('document_kind', '=', doc_kind), ('kind', '=', kind), ('tax', '=', tax), ('factor', '=', factor), ('rate', '=', rate)], 'som.add.tax')
         payment_doc_domain = self._filter_domain(dict(filters, kind='P'), economic=True, dates=False, currency=False)
         payment_domain = [('document_id', 'any', payment_doc_domain)]
         for key, op in [('start', '>='), ('end', '<=')]:
@@ -146,7 +173,7 @@ class AddExplorer(models.Model):
         missing = apps + [('target_id', '=', False)]
         add('Calidad documental', 'Aplicaciones con UUID no cargado · FechaPago', self.env['som.add.application'].search_count(missing), 'aplicaciones', missing, 'som.add.application')
         add('Pagos documentados · FechaPago / MonedaP', 'Aplicaciones', self.env['som.add.application'].search_count(apps), 'aplicaciones', apps, 'som.add.application')
-        concept_domain = [('document_id', 'any', economic), ('commercial', '=', True)]
+        concept_domain = [('document_id', 'any', economic), ('commercial', '=', True), ('document_kind', '=', 'I')]
         for cur, code, unit, amount in self.env['som.add.concept']._read_group(concept_domain, ['currency', 'sat_code', 'unit_code'], ['amount:sum'], order='amount:sum DESC', limit=20):
             add('Conceptos · clave SAT y unidad (sin homologación de productos)', '%s · %s' % (code, unit), amount, cur,
                 concept_domain + [('currency', '=', cur), ('sat_code', '=', code), ('unit_code', '=', unit)], 'som.add.concept')

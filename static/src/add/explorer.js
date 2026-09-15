@@ -30,7 +30,8 @@ export class AddExplorer extends Component {
         this.state = useState({
             boot: { companies: [] }, filters: { companies: [], direction: this.mode === "dashboard" ? "received" : this.mode,
                 q: "", start: "", end: "", currency: "", kind: "", method: "", form: "", use: "", complement: "", tax: "",
-                sat: "", consistency: "", batch: "", classification: "", date_basis: "fiscal_date", measure: "base", valid_only: false, archived: false },
+                sat: "", consistency: "", batch: "", classification: "", date_basis: "fiscal_date", measure: "base", valid_only: false, archived: false,
+                net: false, mxn: false, compare: false },
             rows: [], count: 0, totals: [], domain: [], dashboard: null, offset: 0, limit: 50,
             order: "fiscal_date desc, id desc", selected: [], detail: null, tab: "summary", fullscreen: false,
             busy: false, error: "", advanced: false, showColumns: false, upload: false, uploading: false,

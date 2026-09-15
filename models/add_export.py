@@ -12,7 +12,9 @@ HEADERS = [('uuid', 'UUID'), ('company_id', 'Compañía'), ('perspective', 'Dire
            ('series', 'Serie'), ('folio', 'Folio'), ('kind', 'Tipo'), ('currency', 'Moneda'), ('subtotal', 'Subtotal'),
            ('discount', 'Descuento'), ('vat', 'IVA global'), ('withheld', 'Retenciones globales'), ('total', 'Total'),
            ('method', 'Método'), ('payment_form', 'Forma'), ('complements', 'Complementos'), ('sat_state', 'Estado SAT'),
-           ('classification', 'Categoría'), ('reference', 'Referencia'), ('sha256', 'SHA-256')]
+           ('classification', 'Categoría'), ('reference', 'Referencia'), ('sha256', 'SHA-256'),
+           ('net_base', 'Base neta documental I − E'), ('base_mxn', 'Base analítica MXN'),
+           ('total_mxn', 'Total analítico MXN'), ('mxn_available', 'Conversión disponible'), ('conversion_source', 'Fuente TC')]
 
 
 class AddExport(models.Model):

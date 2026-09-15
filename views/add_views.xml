@@ -17,6 +17,7 @@
             <field name="series"/><field name="folio"/><field name="kind"/><field name="currency"/><field name="subtotal"/><field name="discount"/>
             <field name="vat"/><field name="withheld"/><field name="total"/><field name="method"/><field name="complements" optional="show"/>
             <field name="sat_state"/><field name="consistency"/><field name="uuid" optional="hide"/><field name="classification" optional="hide"/>
+            <field name="net_base" optional="hide"/><field name="base_mxn" optional="hide"/><field name="total_mxn" optional="hide"/><field name="conversion_source" optional="hide"/>
         </list>
     </field></record>
     <record id="view_add_document_search" model="ir.ui.view"><field name="name">som.add.document.search</field><field name="model">som.add.document</field><field name="arch" type="xml">

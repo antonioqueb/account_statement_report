@@ -136,7 +136,7 @@ class AddBatch(models.Model):
                 item._internal().write({'state': 'failed', 'code': 'technical', 'message': 'Fallo técnico al persistir; puede reintentar.'})
                 self.env['som.add.audit']._log(self.company_id, 'import', 'ítem %s' % item.id, result='technical')
         if not self.env['som.add.item'].search_count([('batch_id', '=', self.id), ('state', '=', 'pending')]):
-            issues = self.env['som.add.item'].search_count([('batch_id', '=', self.id), ('state', 'in', ['rejected', 'failed'])])
+            issues = self.env['som.add.item'].search_count([('batch_id', '=', self.id), '|', ('state', 'in', ['rejected', 'failed']), ('warning', '=', True)])
             self._internal().write({'state': 'issues' if issues else 'done', 'finished_at': fields.Datetime.now()})
         return self.status()
 

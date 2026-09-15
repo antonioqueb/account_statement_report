@@ -37,7 +37,12 @@ class AddDocument(models.Model):
     subtotal = fields.Float(digits=(24, 6), aggregator='sum')
     discount = fields.Float(digits=(24, 6), aggregator='sum')
     base = fields.Float(digits=(24, 6), aggregator='sum')
+    net_base = fields.Float(digits=(24, 6), aggregator='sum', string='Base neta documental I − E')
     total = fields.Float(digits=(24, 6), aggregator='sum')
+    mxn_available = fields.Boolean(index=True)
+    base_mxn = fields.Float(digits=(24, 6), aggregator='sum')
+    total_mxn = fields.Float(digits=(24, 6), aggregator='sum')
+    conversion_source = fields.Char()
     vat = fields.Float(digits=(24, 6), aggregator='sum')
     withheld = fields.Float(digits=(24, 6), aggregator='sum')
     method = fields.Char(index=True)
@@ -69,6 +74,9 @@ class AddDocument(models.Model):
     def _values(self, parsed):
         h, e, r, stamp = (parsed[k] for k in ('header', 'emitter', 'receiver', 'stamp'))
         taxes = [t for t in parsed['taxes'] if t['level'] in ('global', 'local')]
+        base = cfdi.number(h.get('SubTotal')) - cfdi.number(h.get('Descuento'))
+        rate = cfdi.number('1' if h.get('Moneda') == 'MXN' else h.get('TipoCambio'))
+        available = h.get('Moneda') != 'XXX' and rate > 0
         return dict(uuid=parsed['uuid'], original_uuid=stamp['UUID'], sha256=parsed['sha256'],
                     issued=parsed['issued'], received=parsed['received'], kind=h['TipoDeComprobante'], version=h['Version'],
                     series=h.get('Serie'), folio=h.get('Folio'), fiscal_date=parsed['fiscal_date'], fiscal_datetime=h['Fecha'],
@@ -77,7 +85,10 @@ class AddDocument(models.Model):
                     emitter_name=e.get('Nombre'), receiver_name=r.get('Nombre'), currency=h.get('Moneda'),
                     exchange_rate=float(cfdi.number(h.get('TipoCambio'))), subtotal=float(cfdi.number(h.get('SubTotal'))),
                     discount=float(cfdi.number(h.get('Descuento'))), total=float(cfdi.number(h.get('Total'))),
-                    base=float(cfdi.number(h.get('SubTotal')) - cfdi.number(h.get('Descuento'))),
+                    base=float(base), net_base=float(base * (1 if h['TipoDeComprobante'] == 'I' else -1 if h['TipoDeComprobante'] == 'E' else 0)),
+                    mxn_available=available, base_mxn=float(base * rate) if available else 0,
+                    total_mxn=float(cfdi.number(h.get('Total')) * rate) if available else 0,
+                    conversion_source='Moneda original MXN' if h.get('Moneda') == 'MXN' else 'TipoCambio del XML' if available else 'Sin tipo de cambio aplicable',
                     vat=float(sum(cfdi.number(t['amount']) for t in taxes if t['tax'] == '002' and t['kind'] == 'transfer')),
                     withheld=float(sum(cfdi.number(t['amount']) for t in taxes if t['kind'] == 'withholding')),
                     method=h.get('MetodoPago'), payment_form=h.get('FormaPago'), cfdi_use=r.get('UsoCFDI'),
@@ -219,6 +230,7 @@ class AddChild(models.AbstractModel):
     company_id = fields.Many2one(related='document_id.company_id', store=True, index=True)
     currency = fields.Char(related='document_id.currency', store=True)
     fiscal_date = fields.Date(related='document_id.fiscal_date', store=True, index=True)
+    document_kind = fields.Selection(related='document_id.kind', store=True)
     original = fields.Json()
 
 
