@@ -92,7 +92,7 @@ class AddBatch(models.Model):
                 try:
                     parsed = cfdi.parse(data, self.company_id.vat, self.direction, {'xml_bytes': limits['xml_bytes']})
                     vault = self.env['som.add.vault'].sudo()._internal().create(dict(company_id=self.company_id.id, data=base64.b64encode(data)))
-                    values.update(parsed=parsed, vault_id=vault.id, warning=bool(parsed['warnings']))
+                    values.update(parsed=parsed, vault_id=vault.id, warning=bool(parsed['warnings']), uuid=parsed['uuid'], sha256=parsed['sha256'])
                 except cfdi.Rejected as error:
                     values.update(state='rejected', code=error.code, message=str(error))
                     if error.code == 'payroll':
@@ -265,6 +265,8 @@ class AddItem(models.Model):
     batch_id = fields.Many2one('som.add.batch', required=True, index=True, ondelete='restrict')
     company_id = fields.Many2one(related='batch_id.company_id', store=True, index=True)
     filename = fields.Char()
+    uuid = fields.Char()
+    sha256 = fields.Char()
     state = fields.Selection([(k, v) for k, v in [('pending', 'Pendiente'), ('imported', 'Importado'), ('duplicate', 'Duplicado omitido'),
                                                  ('rejected', 'Rechazado'), ('failed', 'Fallido')]], required=True, index=True)
     code = fields.Char(index=True)

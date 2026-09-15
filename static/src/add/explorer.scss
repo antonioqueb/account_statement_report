@@ -34,6 +34,8 @@
     .o_add_table tr:hover td, .o_add_table tr.o_add_current td { background: #eef7f8; }
     .o_add_table .o_add_select { position: sticky; left: 0; z-index: 1; background: white; width: 36px; }
     .o_add_table th.o_add_select { z-index: 3; background: #eaf0f3; }
+    .o_add_table td:nth-child(2) { position: sticky; left: 38px; z-index: 1; background: white; }
+    .o_add_table th:nth-child(2) { left: 38px; z-index: 3; }
     .o_add_resizer { position: absolute; right: 0; top: 0; height: 100%; width: 7px; cursor: col-resize; border-right: 1px solid #c4d3da; }
     .o_add_number { text-align: right; font-variant-numeric: tabular-nums; }
     .o_add_empty { padding: 45px !important; text-align: center; color: #657b88; white-space: normal !important; }

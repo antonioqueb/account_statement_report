@@ -37,7 +37,8 @@ export class AddExplorer extends Component {
             busy: false, error: "", advanced: false, showColumns: false, upload: false, uploading: false,
             uploadDirection: this.mode === "issued" ? "issued" : "received", uploadCompany: 0,
             uploadFiles: [], fileProgress: 0, uploadIndex: 0, batch: null,
-            visible: COLUMNS.slice(0, 16).map(c => c[0]), widths: {}, saved: [], saveName: "", archiveReason: "",
+            visible: window.matchMedia("(max-width: 767px)").matches ? ["fiscal_date", "counterparty", "total", "currency", "kind"] : COLUMNS.slice(0, 16).map(c => c[0]),
+            widths: {}, saved: [], saveName: "", archiveReason: "",
         });
         this.generation = 0;
         this.detailGeneration = 0;
@@ -261,7 +262,7 @@ export class AddExplorer extends Component {
         body.set("filters", JSON.stringify(this.state.filters));
         body.set("ids", JSON.stringify(current ? [this.state.detail.id] : this.state.selected));
         body.set("format", format);
-        const columns = this.state.visible.flatMap(key => key === "counterparty" ? [this.isIssued ? "receiver_name" : "emitter_name"] : key === "rfc" ? [this.isIssued ? "receiver_rfc" : "emitter_rfc"] : [key]);
+        const columns = this.state.visible.flatMap(key => key === "counterparty" ? [this.isIssued ? "receiver_name" : "emitter_name"] : key === "rfc" ? [this.isIssued ? "receiver_rfc" : "emitter_rfc"] : key === "folio" ? ["series", "folio"] : [key]);
         body.set("columns", JSON.stringify(format === "xlsx" ? [] : columns));
         try {
             const response = await fetch("/som/add/export", { method: "POST", body });

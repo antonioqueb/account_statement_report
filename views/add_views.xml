@@ -1,70 +1,685 @@
 <?xml version='1.0' encoding='utf-8'?>
 <odoo>
     <record id="view_add_users_grants" model="ir.ui.view">
-        <field name="name">res.users.add.grants</field><field name="model">res.users</field><field name="inherit_id" ref="base.view_users_form"/>
-        <field name="arch" type="xml"><xpath expr="//sheet" position="inside"><group string="Autorización explícita ADD" groups="account_statement_report.group_add_access">
-            <field name="add_company_ids" widget="many2many_tags" domain="[('id', 'in', company_ids)]" options="{'no_create': True}"/>
-            <div class="text-muted">Requiere también permiso efectivo para administrar usuarios. Los roles ADD no se asignan automáticamente.</div>
-        </group></xpath></field>
+        <field name="name">res.users.add.grants</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Autorización explícita ADD" groups="account_statement_report.group_add_access">
+                    <field name="add_company_ids" widget="many2many_tags" domain="[('id', 'in', company_ids)]" options="{'no_create': True}"/>
+                    <div class="text-muted">Requiere también permiso efectivo para administrar usuarios. Los roles ADD no se asignan automáticamente.</div>
+                </group>
+            </xpath>
+        </field>
     </record>
-    <record id="action_add_dashboard" model="ir.actions.client"><field name="name">Tablero ADD</field><field name="tag">som_add.explorer</field><field name="params" eval="{'mode': 'dashboard'}"/></record>
-    <record id="action_add_issued" model="ir.actions.client"><field name="name">Emitidos</field><field name="tag">som_add.explorer</field><field name="params" eval="{'mode': 'issued'}"/></record>
-    <record id="action_add_received" model="ir.actions.client"><field name="name">Recibidos</field><field name="tag">som_add.explorer</field><field name="params" eval="{'mode': 'received'}"/></record>
-
-    <record id="view_add_document_list" model="ir.ui.view"><field name="name">som.add.document.list</field><field name="model">som.add.document</field><field name="arch" type="xml">
-        <list create="0" edit="0" delete="0" default_order="fiscal_date desc,id desc">
-            <field name="company_id"/><field name="fiscal_date"/><field name="emitter_name"/><field name="receiver_name" optional="hide"/>
-            <field name="series"/><field name="folio"/><field name="kind"/><field name="currency"/><field name="subtotal"/><field name="discount"/>
-            <field name="vat"/><field name="withheld"/><field name="total"/><field name="method"/><field name="complements" optional="show"/>
-            <field name="sat_state"/><field name="consistency"/><field name="uuid" optional="hide"/><field name="classification" optional="hide"/>
-            <field name="net_base" optional="hide"/><field name="base_mxn" optional="hide"/><field name="total_mxn" optional="hide"/><field name="conversion_source" optional="hide"/>
-        </list>
-    </field></record>
-    <record id="view_add_document_search" model="ir.ui.view"><field name="name">som.add.document.search</field><field name="model">som.add.document</field><field name="arch" type="xml">
-        <search><field name="uuid"/><field name="emitter_rfc"/><field name="receiver_rfc"/><field name="emitter_name"/><field name="receiver_name"/>
-            <field name="company_id"/><field name="currency"/><field name="kind"/><field name="classification"/><field name="batch_id"/>
-            <filter name="issued" string="Emitidos" domain="[('issued','=',True)]"/><filter name="received" string="Recibidos" domain="[('received','=',True)]"/>
-            <filter name="date" string="Fecha fiscal" date="fiscal_date"/><filter name="unqueried" string="SAT no consultado" domain="[('sat_state','=','unknown')]"/>
-            <filter name="archived" string="Archivados" domain="[('active','=',False)]"/>
-            <group><filter name="group_company" string="Compañía" context="{'group_by':'company_id'}"/><filter name="group_month" string="Mes" context="{'group_by':'fiscal_date:month'}"/>
-                <filter name="group_currency" string="Moneda" context="{'group_by':'currency'}"/><filter name="group_vendor" string="Emisor" context="{'group_by':'emitter_rfc'}"/>
-                <filter name="group_customer" string="Receptor" context="{'group_by':'receiver_rfc'}"/><filter name="group_batch" string="Lote" context="{'group_by':'batch_id'}"/>
-                <filter name="group_type" string="Tipo" context="{'group_by':'kind'}"/></group>
-        </search>
-    </field></record>
-    <record id="view_add_document_form" model="ir.ui.view"><field name="name">som.add.document.form</field><field name="model">som.add.document</field><field name="arch" type="xml">
-        <form create="0" delete="0" edit="0"><header><button name="reprocess" type="object" string="Reprocesar" groups="account_statement_report.group_add_operator"/></header><sheet>
-            <h1><field name="uuid"/></h1><group><group><field name="company_id"/><field name="fiscal_datetime"/><field name="kind"/><field name="issued"/><field name="received"/>
-            <field name="emitter_rfc"/><field name="emitter_name"/><field name="receiver_rfc"/><field name="receiver_name"/></group>
-            <group><field name="currency"/><field name="subtotal"/><field name="discount"/><field name="vat"/><field name="withheld"/><field name="total"/><field name="sat_state"/><field name="consistency"/></group></group>
-            <field name="alerts"/><notebook><page string="Conceptos"><field name="concept_ids"/></page><page string="Impuestos"><field name="tax_ids"/></page>
-            <page string="Pagos"><field name="payment_ids"/></page><page string="Relaciones"><field name="relation_ids"/></page>
-            <page string="Trazabilidad"><group><field name="batch_id"/><field name="sha256"/><field name="parser_version"/><field name="filename"/><field name="notes"/><field name="reference"/><field name="classification"/><field name="archive_reason"/></group></page></notebook>
-        </sheet></form>
-    </field></record>
-
-    <record id="view_add_batch_list" model="ir.ui.view"><field name="name">som.add.batch.list</field><field name="model">som.add.batch</field><field name="arch" type="xml">
-        <list create="0" edit="0" delete="0"><field name="name"/><field name="company_id"/><field name="direction"/><field name="user_id"/><field name="state"/>
-            <field name="total_count"/><field name="imported_count"/><field name="duplicate_count"/><field name="rejected_count"/><field name="failed_count"/><field name="pending_count"/><field name="progress" widget="progressbar"/></list>
-    </field></record>
-    <record id="view_add_batch_form" model="ir.ui.view"><field name="name">som.add.batch.form</field><field name="model">som.add.batch</field><field name="arch" type="xml">
-        <form create="0" edit="0" delete="0"><header>
-            <button name="seal" type="object" string="Cerrar recepción e iniciar" invisible="state != 'pending'" groups="account_statement_report.group_add_operator"/>
-            <button name="process_block" type="object" string="Procesar siguiente bloque" invisible="state != 'processing'" groups="account_statement_report.group_add_operator"/>
-            <button name="retry" type="object" string="Reintentar pendientes/fallidos" invisible="state not in ['issues','failed','cancelled']" groups="account_statement_report.group_add_operator"/>
-            <button name="cancel" type="object" string="Cancelar pendientes" invisible="state not in ['pending','processing','failed']" groups="account_statement_report.group_add_operator"/>
-            <field name="state" widget="statusbar"/></header><sheet><h1><field name="name"/></h1>
-            <group><group><field name="company_id"/><field name="direction"/><field name="user_id"/><field name="started_at"/><field name="finished_at"/></group>
-            <group><field name="total_count"/><field name="imported_count"/><field name="duplicate_count"/><field name="rejected_count"/><field name="failed_count"/><field name="pending_count"/><field name="progress" widget="progressbar"/></group></group><field name="item_ids"/>
-        </sheet></form>
-    </field></record>
-    <record id="view_add_config_form" model="ir.ui.view"><field name="name">som.add.config.form</field><field name="model">som.add.config</field><field name="arch" type="xml">
-        <form><sheet><group><field name="company_id"/><field name="xml_mb"/><field name="upload_mb"/><field name="batch_mb"/><field name="entries"/><field name="block_size"/><field name="retention_days"/></group>
-        <p>Los originales incorporados se conservan. Los archivos pendientes o fallidos vencidos se eliminan. Las exportaciones se entregan en la misma solicitud y no generan archivos públicos.</p></sheet></form>
-    </field></record>
-
+    <record id="action_add_dashboard" model="ir.actions.client">
+        <field name="name">Tablero ADD</field>
+        <field name="tag">som_add.explorer</field>
+        <field name="params" eval="{'mode': 'dashboard'}"/>
+    </record>
+    <record id="action_add_issued" model="ir.actions.client">
+        <field name="name">Emitidos</field>
+        <field name="tag">som_add.explorer</field>
+        <field name="params" eval="{'mode': 'issued'}"/>
+    </record>
+    <record id="action_add_received" model="ir.actions.client">
+        <field name="name">Recibidos</field>
+        <field name="tag">som_add.explorer</field>
+        <field name="params" eval="{'mode': 'received'}"/>
+    </record>
+    <record id="view_add_document_list" model="ir.ui.view">
+        <field name="name">som.add.document.list</field>
+        <field name="model">som.add.document</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="fiscal_date desc,id desc">
+                <field name="company_id"/>
+                <field name="fiscal_date"/>
+                <field name="emitter_name"/>
+                <field name="receiver_name" optional="hide"/>
+                <field name="series"/>
+                <field name="folio"/>
+                <field name="kind"/>
+                <field name="currency"/>
+                <field name="subtotal"/>
+                <field name="discount"/>
+                <field name="vat"/>
+                <field name="withheld"/>
+                <field name="total"/>
+                <field name="method"/>
+                <field name="complements" optional="show"/>
+                <field name="sat_state"/>
+                <field name="consistency"/>
+                <field name="uuid" optional="hide"/>
+                <field name="classification" optional="hide"/>
+                <field name="net_base" optional="hide"/>
+                <field name="base_mxn" optional="hide"/>
+                <field name="total_mxn" optional="hide"/>
+                <field name="conversion_source" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_document_search" model="ir.ui.view">
+        <field name="name">som.add.document.search</field>
+        <field name="model">som.add.document</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="uuid"/>
+                <field name="emitter_rfc"/>
+                <field name="receiver_rfc"/>
+                <field name="emitter_name"/>
+                <field name="receiver_name"/>
+                <field name="company_id"/>
+                <field name="currency"/>
+                <field name="kind"/>
+                <field name="classification"/>
+                <field name="batch_id"/>
+                <filter name="issued" string="Emitidos" domain="[('issued','=',True)]"/>
+                <filter name="received" string="Recibidos" domain="[('received','=',True)]"/>
+                <filter name="date" string="Fecha fiscal" date="fiscal_date"/>
+                <filter name="unqueried" string="SAT no consultado" domain="[('sat_state','=','unknown')]"/>
+                <filter name="archived" string="Archivados" domain="[('active','=',False)]"/>
+                <group>
+                    <filter name="group_company" string="Compañía" context="{'group_by':'company_id'}"/>
+                    <filter name="group_month" string="Mes" context="{'group_by':'fiscal_date:month'}"/>
+                    <filter name="group_currency" string="Moneda" context="{'group_by':'currency'}"/>
+                    <filter name="group_vendor" string="Emisor" context="{'group_by':'emitter_rfc'}"/>
+                    <filter name="group_customer" string="Receptor" context="{'group_by':'receiver_rfc'}"/>
+                    <filter name="group_batch" string="Lote" context="{'group_by':'batch_id'}"/>
+                    <filter name="group_type" string="Tipo" context="{'group_by':'kind'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_document_form" model="ir.ui.view">
+        <field name="name">som.add.document.form</field>
+        <field name="model">som.add.document</field>
+        <field name="arch" type="xml">
+            <form create="0" delete="0" edit="0">
+                <header>
+                    <button name="reprocess" type="object" string="Reprocesar" groups="account_statement_report.group_add_operator"/>
+                </header>
+                <sheet>
+                    <h1>
+                        <field name="uuid"/>
+                    </h1>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="fiscal_datetime"/>
+                            <field name="kind"/>
+                            <field name="issued"/>
+                            <field name="received"/>
+                            <field name="emitter_rfc"/>
+                            <field name="emitter_name"/>
+                            <field name="receiver_rfc"/>
+                            <field name="receiver_name"/>
+                        </group>
+                        <group>
+                            <field name="currency"/>
+                            <field name="subtotal"/>
+                            <field name="discount"/>
+                            <field name="vat"/>
+                            <field name="withheld"/>
+                            <field name="total"/>
+                            <field name="sat_state"/>
+                            <field name="consistency"/>
+                        </group>
+                    </group>
+                    <field name="alerts"/>
+                    <notebook>
+                        <page string="Conceptos">
+                            <field name="concept_ids"/>
+                        </page>
+                        <page string="Impuestos">
+                            <field name="tax_ids"/>
+                        </page>
+                        <page string="Pagos">
+                            <field name="payment_ids"/>
+                        </page>
+                        <page string="Relaciones">
+                            <field name="relation_ids"/>
+                        </page>
+                        <page string="Trazabilidad">
+                            <group>
+                                <field name="batch_id"/>
+                                <field name="sha256"/>
+                                <field name="parser_version"/>
+                                <field name="filename"/>
+                                <field name="notes"/>
+                                <field name="reference"/>
+                                <field name="classification"/>
+                                <field name="archive_reason"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_batch_list" model="ir.ui.view">
+        <field name="name">som.add.batch.list</field>
+        <field name="model">som.add.batch</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="direction"/>
+                <field name="user_id"/>
+                <field name="state"/>
+                <field name="total_count"/>
+                <field name="imported_count"/>
+                <field name="duplicate_count"/>
+                <field name="rejected_count"/>
+                <field name="failed_count"/>
+                <field name="pending_count"/>
+                <field name="progress" widget="progressbar"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_batch_form" model="ir.ui.view">
+        <field name="name">som.add.batch.form</field>
+        <field name="model">som.add.batch</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <header>
+                    <button name="seal" type="object" string="Cerrar recepción e iniciar" invisible="state != 'pending'" groups="account_statement_report.group_add_operator"/>
+                    <button name="process_block" type="object" string="Procesar siguiente bloque" invisible="state != 'processing'" groups="account_statement_report.group_add_operator"/>
+                    <button name="retry" type="object" string="Reintentar pendientes/fallidos" invisible="state not in ['issues','failed','cancelled']" groups="account_statement_report.group_add_operator"/>
+                    <button name="cancel" type="object" string="Cancelar pendientes" invisible="state not in ['pending','processing','failed']" groups="account_statement_report.group_add_operator"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <h1>
+                        <field name="name"/>
+                    </h1>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="direction"/>
+                            <field name="user_id"/>
+                            <field name="started_at"/>
+                            <field name="finished_at"/>
+                        </group>
+                        <group>
+                            <field name="total_count"/>
+                            <field name="imported_count"/>
+                            <field name="duplicate_count"/>
+                            <field name="rejected_count"/>
+                            <field name="failed_count"/>
+                            <field name="pending_count"/>
+                            <field name="progress" widget="progressbar"/>
+                        </group>
+                    </group>
+                    <field name="item_ids"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_config_form" model="ir.ui.view">
+        <field name="name">som.add.config.form</field>
+        <field name="model">som.add.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="company_id"/>
+                        <field name="xml_mb"/>
+                        <field name="upload_mb"/>
+                        <field name="batch_mb"/>
+                        <field name="entries"/>
+                        <field name="block_size"/>
+                        <field name="retention_days"/>
+                    </group>
+                    <p>Los originales incorporados se conservan. Los archivos pendientes o fallidos vencidos se eliminan. Las exportaciones se entregan en la misma solicitud y no generan archivos públicos.</p>
+                </sheet>
+            </form>
+        </field>
+    </record>
     <menuitem id="menu_add_root" name="ADD" sequence="25" web_icon="account_statement_report,static/description/add_icon.svg" groups="account_statement_report.group_add_reader"/>
     <menuitem id="menu_add_dashboard" name="Tablero" parent="menu_add_root" action="action_add_dashboard" sequence="10"/>
     <menuitem id="menu_add_issued" name="Emitidos" parent="menu_add_root" action="action_add_issued" sequence="20"/>
     <menuitem id="menu_add_received" name="Recibidos" parent="menu_add_root" action="action_add_received" sequence="30"/>
-<record id="view_add_concept_list" model="ir.ui.view"><field name="name">som.add.concept.list</field><field name="model">som.add.concept</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="fiscal_date" string="Fecha"/><field name="sat_code" string="Clave SAT"/><field name="description" string="Descripción"/><field name="unit_code" string="Unidad SAT"/><field name="quantity" string="Cantidad"/><field name="unit_price" string="Precio unitario"/><field name="amount" string="Importe"/><field name="discount" string="Descuento"/><field name="currency" string="Moneda"/><field name="tax_object" string="Objeto impuesto"/></list></field></record><record id="view_add_concept_form" model="ir.ui.view"><field name="name">som.add.concept.form</field><field name="model">som.add.concept</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><sheet><group><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="fiscal_date" string="Fecha"/><field name="sat_code" string="Clave SAT"/><field name="description" string="Descripción"/><field name="unit_code" string="Unidad SAT"/><field name="quantity" string="Cantidad"/><field name="unit_price" string="Precio unitario"/><field name="amount" string="Importe"/><field name="discount" string="Descuento"/><field name="currency" string="Moneda"/><field name="tax_object" string="Objeto impuesto"/></group></sheet></form></field></record><record id="view_add_concept_search" model="ir.ui.view"><field name="name">som.add.concept.search</field><field name="model">som.add.concept</field><field name="arch" type="xml"><search><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="sat_code" string="Clave SAT"/><field name="description" string="Descripción"/><field name="unit_code" string="Unidad SAT"/><field name="currency" string="Moneda"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/><filter name="group_sat_code" string="Clave SAT" context="{'group_by':'sat_code'}"/><filter name="group_unit_code" string="Unidad SAT" context="{'group_by':'unit_code'}"/><filter name="group_currency" string="Moneda" context="{'group_by':'currency'}"/></group></search></field></record><record id="view_add_tax_list" model="ir.ui.view"><field name="name">som.add.tax.list</field><field name="model">som.add.tax</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="document_id" string="Documento"/><field name="company_id" string="Compañía"/><field name="concept_id" string="Concepto"/><field name="level" string="Nivel"/><field name="kind" string="Tipo"/><field name="tax" string="Impuesto"/><field name="factor" string="Factor"/><field name="rate" string="Tasa / cuota"/><field name="base" string="Base"/><field name="amount" string="Importe"/><field name="currency" string="Moneda"/></list></field></record><record id="view_add_tax_form" model="ir.ui.view"><field name="name">som.add.tax.form</field><field name="model">som.add.tax</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><sheet><group><field name="document_id" string="Documento"/><field name="company_id" string="Compañía"/><field name="concept_id" string="Concepto"/><field name="level" string="Nivel"/><field name="kind" string="Tipo"/><field name="tax" string="Impuesto"/><field name="factor" string="Factor"/><field name="rate" string="Tasa / cuota"/><field name="base" string="Base"/><field name="amount" string="Importe"/><field name="currency" string="Moneda"/></group></sheet></form></field></record><record id="view_add_tax_search" model="ir.ui.view"><field name="name">som.add.tax.search</field><field name="model">som.add.tax</field><field name="arch" type="xml"><search><field name="document_id" string="Documento"/><field name="company_id" string="Compañía"/><field name="level" string="Nivel"/><field name="kind" string="Tipo"/><field name="tax" string="Impuesto"/><field name="currency" string="Moneda"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/><filter name="group_level" string="Nivel" context="{'group_by':'level'}"/><filter name="group_kind" string="Tipo" context="{'group_by':'kind'}"/><filter name="group_tax" string="Impuesto" context="{'group_by':'tax'}"/><filter name="group_currency" string="Moneda" context="{'group_by':'currency'}"/></group></search></field></record><record id="view_add_payment_list" model="ir.ui.view"><field name="name">som.add.payment.list</field><field name="model">som.add.payment</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="payment_date" string="FechaPago"/><field name="currency" string="MonedaP"/><field name="amount" string="Monto documentado"/><field name="form" string="Forma"/><field name="operation" string="Operación"/></list></field></record><record id="view_add_payment_form" model="ir.ui.view"><field name="name">som.add.payment.form</field><field name="model">som.add.payment</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><sheet><group><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="payment_date" string="FechaPago"/><field name="currency" string="MonedaP"/><field name="amount" string="Monto documentado"/><field name="form" string="Forma"/><field name="operation" string="Operación"/></group></sheet></form></field></record><record id="view_add_payment_search" model="ir.ui.view"><field name="name">som.add.payment.search</field><field name="model">som.add.payment</field><field name="arch" type="xml"><search><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="payment_date" string="FechaPago"/><field name="currency" string="MonedaP"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/><filter name="group_currency" string="MonedaP" context="{'group_by':'currency'}"/></group></search></field></record><record id="view_add_application_list" model="ir.ui.view"><field name="name">som.add.application.list</field><field name="model">som.add.application</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="payment_id" string="Pago"/><field name="target_uuid" string="UUID relacionado"/><field name="target_id" string="Documento cargado"/><field name="currency" string="MonedaDR"/><field name="partiality" string="Parcialidad"/><field name="previous" string="Saldo anterior"/><field name="paid" string="Importe aplicado"/><field name="balance" string="Saldo reportado"/></list></field></record><record id="view_add_application_form" model="ir.ui.view"><field name="name">som.add.application.form</field><field name="model">som.add.application</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><sheet><group><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="payment_id" string="Pago"/><field name="target_uuid" string="UUID relacionado"/><field name="target_id" string="Documento cargado"/><field name="currency" string="MonedaDR"/><field name="partiality" string="Parcialidad"/><field name="previous" string="Saldo anterior"/><field name="paid" string="Importe aplicado"/><field name="balance" string="Saldo reportado"/></group></sheet></form></field></record><record id="view_add_application_search" model="ir.ui.view"><field name="name">som.add.application.search</field><field name="model">som.add.application</field><field name="arch" type="xml"><search><field name="company_id" string="Compañía"/><field name="document_id" string="Documento"/><field name="target_uuid" string="UUID relacionado"/><field name="currency" string="MonedaDR"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/><filter name="group_currency" string="MonedaDR" context="{'group_by':'currency'}"/></group></search></field></record><record id="view_add_relation_list" model="ir.ui.view"><field name="name">som.add.relation.list</field><field name="model">som.add.relation</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="company_id" string="Compañía"/><field name="document_id" string="Origen"/><field name="kind" string="Tipo relación"/><field name="target_uuid" string="UUID destino"/><field name="target_id" string="Destino cargado"/></list></field></record><record id="view_add_relation_form" model="ir.ui.view"><field name="name">som.add.relation.form</field><field name="model">som.add.relation</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><sheet><group><field name="company_id" string="Compañía"/><field name="document_id" string="Origen"/><field name="kind" string="Tipo relación"/><field name="target_uuid" string="UUID destino"/><field name="target_id" string="Destino cargado"/></group></sheet></form></field></record><record id="view_add_relation_search" model="ir.ui.view"><field name="name">som.add.relation.search</field><field name="model">som.add.relation</field><field name="arch" type="xml"><search><field name="company_id" string="Compañía"/><field name="document_id" string="Origen"/><field name="kind" string="Tipo relación"/><field name="target_uuid" string="UUID destino"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/><filter name="group_kind" string="Tipo relación" context="{'group_by':'kind'}"/></group></search></field></record><record id="view_add_item_list" model="ir.ui.view"><field name="name">som.add.item.list</field><field name="model">som.add.item</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="company_id" string="Compañía"/><field name="batch_id" string="Lote"/><field name="filename" string="Archivo"/><field name="state" string="Resultado"/><field name="code" string="Código"/><field name="message" string="Motivo"/><field name="warning" string="Advertencia"/><field name="document_id" string="Documento"/></list></field></record><record id="view_add_item_form" model="ir.ui.view"><field name="name">som.add.item.form</field><field name="model">som.add.item</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><sheet><group><field name="company_id" string="Compañía"/><field name="batch_id" string="Lote"/><field name="filename" string="Archivo"/><field name="state" string="Resultado"/><field name="code" string="Código"/><field name="message" string="Motivo"/><field name="warning" string="Advertencia"/><field name="document_id" string="Documento"/></group></sheet></form></field></record><record id="view_add_item_search" model="ir.ui.view"><field name="name">som.add.item.search</field><field name="model">som.add.item</field><field name="arch" type="xml"><search><field name="company_id" string="Compañía"/><field name="batch_id" string="Lote"/><field name="state" string="Resultado"/><field name="document_id" string="Documento"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/><filter name="group_batch_id" string="Lote" context="{'group_by':'batch_id'}"/><filter name="group_state" string="Resultado" context="{'group_by':'state'}"/></group></search></field></record><record id="view_add_audit_list" model="ir.ui.view"><field name="name">som.add.audit.list</field><field name="model">som.add.audit</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="create_date" string="Fecha"/><field name="company_id" string="Compañía"/><field name="user_id" string="Usuario"/><field name="operation" string="Operación"/><field name="reference" string="Referencia"/><field name="result" string="Resultado"/><field name="count" string="Cantidad"/></list></field></record><record id="view_add_audit_form" model="ir.ui.view"><field name="name">som.add.audit.form</field><field name="model">som.add.audit</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><sheet><group><field name="create_date" string="Fecha"/><field name="company_id" string="Compañía"/><field name="user_id" string="Usuario"/><field name="operation" string="Operación"/><field name="reference" string="Referencia"/><field name="result" string="Resultado"/><field name="count" string="Cantidad"/></group></sheet></form></field></record><record id="view_add_audit_search" model="ir.ui.view"><field name="name">som.add.audit.search</field><field name="model">som.add.audit</field><field name="arch" type="xml"><search><field name="company_id" string="Compañía"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/></group></search></field></record><record id="view_add_config_list" model="ir.ui.view"><field name="name">som.add.config.list</field><field name="model">som.add.config</field><field name="arch" type="xml"><list create="1" edit="0" delete="0"><field name="company_id" string="Compañía"/><field name="xml_mb" string="XML MiB"/><field name="upload_mb" string="Carga MiB"/><field name="batch_mb" string="Lote MiB"/><field name="entries" string="Archivos"/><field name="block_size" string="Bloque"/><field name="retention_days" string="Conservación días"/></list></field></record><record id="view_add_config_search" model="ir.ui.view"><field name="name">som.add.config.search</field><field name="model">som.add.config</field><field name="arch" type="xml"><search><field name="company_id" string="Compañía"/><group><filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/></group></search></field></record><record id="action_add_concept" model="ir.actions.act_window"><field name="name">Conceptos</field><field name="res_model">som.add.concept</field><field name="view_mode">list,form</field><field name="domain">[('commercial','=',True)]</field></record><menuitem id="menu_add_concept" name="Conceptos" parent="menu_add_root" action="action_add_concept" sequence="40"/><record id="action_add_payment" model="ir.actions.act_window"><field name="name">Complementos de pago</field><field name="res_model">som.add.payment</field><field name="view_mode">list,form</field></record><menuitem id="menu_add_payment" name="Complementos de pago" parent="menu_add_root" action="action_add_payment" sequence="50"/><record id="action_add_relation" model="ir.actions.act_window"><field name="name">Relaciones</field><field name="res_model">som.add.relation</field><field name="view_mode">list,form</field></record><menuitem id="menu_add_relation" name="Relaciones" parent="menu_add_root" action="action_add_relation" sequence="60"/><record id="action_add_batch" model="ir.actions.act_window"><field name="name">Importaciones</field><field name="res_model">som.add.batch</field><field name="view_mode">list,form</field></record><menuitem id="menu_add_batch" name="Importaciones" parent="menu_add_root" action="action_add_batch" sequence="70"/><record id="action_add_config" model="ir.actions.act_window"><field name="name">Configuración</field><field name="res_model">som.add.config</field><field name="view_mode">list,form</field></record><menuitem id="menu_add_config" name="Configuración" parent="menu_add_root" action="action_add_config" sequence="80" groups="account_statement_report.group_add_admin"/><record id="action_add_audit" model="ir.actions.act_window"><field name="name">Auditoría</field><field name="res_model">som.add.audit</field><field name="view_mode">list,form</field></record><menuitem id="menu_add_audit" name="Auditoría" parent="menu_add_root" action="action_add_audit" sequence="90" groups="account_statement_report.group_add_admin"/></odoo>
+    <record id="view_add_concept_list" model="ir.ui.view">
+        <field name="name">som.add.concept.list</field>
+        <field name="model">som.add.concept</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Documento"/>
+                <field name="fiscal_date" string="Fecha"/>
+                <field name="sat_code" string="Clave SAT"/>
+                <field name="description" string="Descripción"/>
+                <field name="unit_code" string="Unidad SAT"/>
+                <field name="quantity" string="Cantidad"/>
+                <field name="unit_price" string="Precio unitario"/>
+                <field name="amount" string="Importe"/>
+                <field name="discount" string="Descuento"/>
+                <field name="currency" string="Moneda"/>
+                <field name="tax_object" string="Objeto impuesto"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_concept_form" model="ir.ui.view">
+        <field name="name">som.add.concept.form</field>
+        <field name="model">som.add.concept</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="company_id" string="Compañía"/>
+                        <field name="document_id" string="Documento"/>
+                        <field name="fiscal_date" string="Fecha"/>
+                        <field name="sat_code" string="Clave SAT"/>
+                        <field name="description" string="Descripción"/>
+                        <field name="unit_code" string="Unidad SAT"/>
+                        <field name="quantity" string="Cantidad"/>
+                        <field name="unit_price" string="Precio unitario"/>
+                        <field name="amount" string="Importe"/>
+                        <field name="discount" string="Descuento"/>
+                        <field name="currency" string="Moneda"/>
+                        <field name="tax_object" string="Objeto impuesto"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_concept_search" model="ir.ui.view">
+        <field name="name">som.add.concept.search</field>
+        <field name="model">som.add.concept</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Documento"/>
+                <field name="sat_code" string="Clave SAT"/>
+                <field name="description" string="Descripción"/>
+                <field name="unit_code" string="Unidad SAT"/>
+                <field name="currency" string="Moneda"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                    <filter name="group_sat_code" string="Clave SAT" context="{'group_by':'sat_code'}"/>
+                    <filter name="group_unit_code" string="Unidad SAT" context="{'group_by':'unit_code'}"/>
+                    <filter name="group_currency" string="Moneda" context="{'group_by':'currency'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_tax_list" model="ir.ui.view">
+        <field name="name">som.add.tax.list</field>
+        <field name="model">som.add.tax</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="document_id" string="Documento"/>
+                <field name="company_id" string="Compañía"/>
+                <field name="concept_id" string="Concepto"/>
+                <field name="level" string="Nivel"/>
+                <field name="kind" string="Tipo"/>
+                <field name="tax" string="Impuesto"/>
+                <field name="factor" string="Factor"/>
+                <field name="rate" string="Tasa / cuota"/>
+                <field name="base" string="Base"/>
+                <field name="amount" string="Importe"/>
+                <field name="currency" string="Moneda"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_tax_form" model="ir.ui.view">
+        <field name="name">som.add.tax.form</field>
+        <field name="model">som.add.tax</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="document_id" string="Documento"/>
+                        <field name="company_id" string="Compañía"/>
+                        <field name="concept_id" string="Concepto"/>
+                        <field name="level" string="Nivel"/>
+                        <field name="kind" string="Tipo"/>
+                        <field name="tax" string="Impuesto"/>
+                        <field name="factor" string="Factor"/>
+                        <field name="rate" string="Tasa / cuota"/>
+                        <field name="base" string="Base"/>
+                        <field name="amount" string="Importe"/>
+                        <field name="currency" string="Moneda"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_tax_search" model="ir.ui.view">
+        <field name="name">som.add.tax.search</field>
+        <field name="model">som.add.tax</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="document_id" string="Documento"/>
+                <field name="company_id" string="Compañía"/>
+                <field name="level" string="Nivel"/>
+                <field name="kind" string="Tipo"/>
+                <field name="tax" string="Impuesto"/>
+                <field name="currency" string="Moneda"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                    <filter name="group_level" string="Nivel" context="{'group_by':'level'}"/>
+                    <filter name="group_kind" string="Tipo" context="{'group_by':'kind'}"/>
+                    <filter name="group_tax" string="Impuesto" context="{'group_by':'tax'}"/>
+                    <filter name="group_currency" string="Moneda" context="{'group_by':'currency'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_payment_list" model="ir.ui.view">
+        <field name="name">som.add.payment.list</field>
+        <field name="model">som.add.payment</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Documento"/>
+                <field name="payment_date" string="FechaPago"/>
+                <field name="currency" string="MonedaP"/>
+                <field name="amount" string="Monto documentado"/>
+                <field name="form" string="Forma"/>
+                <field name="operation" string="Operación"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_payment_form" model="ir.ui.view">
+        <field name="name">som.add.payment.form</field>
+        <field name="model">som.add.payment</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="company_id" string="Compañía"/>
+                        <field name="document_id" string="Documento"/>
+                        <field name="payment_date" string="FechaPago"/>
+                        <field name="currency" string="MonedaP"/>
+                        <field name="amount" string="Monto documentado"/>
+                        <field name="form" string="Forma"/>
+                        <field name="operation" string="Operación"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_payment_search" model="ir.ui.view">
+        <field name="name">som.add.payment.search</field>
+        <field name="model">som.add.payment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Documento"/>
+                <field name="payment_date" string="FechaPago"/>
+                <field name="currency" string="MonedaP"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                    <filter name="group_currency" string="MonedaP" context="{'group_by':'currency'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_application_list" model="ir.ui.view">
+        <field name="name">som.add.application.list</field>
+        <field name="model">som.add.application</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Documento"/>
+                <field name="payment_id" string="Pago"/>
+                <field name="target_uuid" string="UUID relacionado"/>
+                <field name="target_id" string="Documento cargado"/>
+                <field name="currency" string="MonedaDR"/>
+                <field name="partiality" string="Parcialidad"/>
+                <field name="previous" string="Saldo anterior"/>
+                <field name="paid" string="Importe aplicado"/>
+                <field name="balance" string="Saldo reportado"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_application_form" model="ir.ui.view">
+        <field name="name">som.add.application.form</field>
+        <field name="model">som.add.application</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="company_id" string="Compañía"/>
+                        <field name="document_id" string="Documento"/>
+                        <field name="payment_id" string="Pago"/>
+                        <field name="target_uuid" string="UUID relacionado"/>
+                        <field name="target_id" string="Documento cargado"/>
+                        <field name="currency" string="MonedaDR"/>
+                        <field name="partiality" string="Parcialidad"/>
+                        <field name="previous" string="Saldo anterior"/>
+                        <field name="paid" string="Importe aplicado"/>
+                        <field name="balance" string="Saldo reportado"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_application_search" model="ir.ui.view">
+        <field name="name">som.add.application.search</field>
+        <field name="model">som.add.application</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Documento"/>
+                <field name="target_uuid" string="UUID relacionado"/>
+                <field name="currency" string="MonedaDR"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                    <filter name="group_currency" string="MonedaDR" context="{'group_by':'currency'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_relation_list" model="ir.ui.view">
+        <field name="name">som.add.relation.list</field>
+        <field name="model">som.add.relation</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Origen"/>
+                <field name="kind" string="Tipo relación"/>
+                <field name="target_uuid" string="UUID destino"/>
+                <field name="target_id" string="Destino cargado"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_relation_form" model="ir.ui.view">
+        <field name="name">som.add.relation.form</field>
+        <field name="model">som.add.relation</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="company_id" string="Compañía"/>
+                        <field name="document_id" string="Origen"/>
+                        <field name="kind" string="Tipo relación"/>
+                        <field name="target_uuid" string="UUID destino"/>
+                        <field name="target_id" string="Destino cargado"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_relation_search" model="ir.ui.view">
+        <field name="name">som.add.relation.search</field>
+        <field name="model">som.add.relation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="company_id" string="Compañía"/>
+                <field name="document_id" string="Origen"/>
+                <field name="kind" string="Tipo relación"/>
+                <field name="target_uuid" string="UUID destino"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                    <filter name="group_kind" string="Tipo relación" context="{'group_by':'kind'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_item_list" model="ir.ui.view">
+        <field name="name">som.add.item.list</field>
+        <field name="model">som.add.item</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="company_id" string="Compañía"/>
+                <field name="batch_id" string="Lote"/>
+                <field name="filename" string="Archivo"/>
+                <field name="state" string="Resultado"/>
+                <field name="code" string="Código"/>
+                <field name="message" string="Motivo"/>
+                <field name="warning" string="Advertencia"/>
+                <field name="document_id" string="Documento"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_item_form" model="ir.ui.view">
+        <field name="name">som.add.item.form</field>
+        <field name="model">som.add.item</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="company_id" string="Compañía"/>
+                        <field name="batch_id" string="Lote"/>
+                        <field name="filename" string="Archivo"/>
+                        <field name="state" string="Resultado"/>
+                        <field name="code" string="Código"/>
+                        <field name="message" string="Motivo"/>
+                        <field name="warning" string="Advertencia"/>
+                        <field name="document_id" string="Documento"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_item_search" model="ir.ui.view">
+        <field name="name">som.add.item.search</field>
+        <field name="model">som.add.item</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="company_id" string="Compañía"/>
+                <field name="batch_id" string="Lote"/>
+                <field name="state" string="Resultado"/>
+                <field name="document_id" string="Documento"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                    <filter name="group_batch_id" string="Lote" context="{'group_by':'batch_id'}"/>
+                    <filter name="group_state" string="Resultado" context="{'group_by':'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_audit_list" model="ir.ui.view">
+        <field name="name">som.add.audit.list</field>
+        <field name="model">som.add.audit</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="create_date" string="Fecha"/>
+                <field name="company_id" string="Compañía"/>
+                <field name="user_id" string="Usuario"/>
+                <field name="operation" string="Operación"/>
+                <field name="reference" string="Referencia"/>
+                <field name="result" string="Resultado"/>
+                <field name="count" string="Cantidad"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_audit_form" model="ir.ui.view">
+        <field name="name">som.add.audit.form</field>
+        <field name="model">som.add.audit</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="create_date" string="Fecha"/>
+                        <field name="company_id" string="Compañía"/>
+                        <field name="user_id" string="Usuario"/>
+                        <field name="operation" string="Operación"/>
+                        <field name="reference" string="Referencia"/>
+                        <field name="result" string="Resultado"/>
+                        <field name="count" string="Cantidad"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_add_audit_search" model="ir.ui.view">
+        <field name="name">som.add.audit.search</field>
+        <field name="model">som.add.audit</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="company_id" string="Compañía"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_add_config_list" model="ir.ui.view">
+        <field name="name">som.add.config.list</field>
+        <field name="model">som.add.config</field>
+        <field name="arch" type="xml">
+            <list create="1" edit="0" delete="0">
+                <field name="company_id" string="Compañía"/>
+                <field name="xml_mb" string="XML MiB"/>
+                <field name="upload_mb" string="Carga MiB"/>
+                <field name="batch_mb" string="Lote MiB"/>
+                <field name="entries" string="Archivos"/>
+                <field name="block_size" string="Bloque"/>
+                <field name="retention_days" string="Conservación días"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_add_config_search" model="ir.ui.view">
+        <field name="name">som.add.config.search</field>
+        <field name="model">som.add.config</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="company_id" string="Compañía"/>
+                <group>
+                    <filter name="group_company_id" string="Compañía" context="{'group_by':'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_add_concept" model="ir.actions.act_window">
+        <field name="name">Conceptos</field>
+        <field name="res_model">som.add.concept</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('commercial','=',True)]</field>
+    </record>
+    <menuitem id="menu_add_concept" name="Conceptos" parent="menu_add_root" action="action_add_concept" sequence="40"/>
+    <record id="action_add_payment" model="ir.actions.act_window">
+        <field name="name">Complementos de pago</field>
+        <field name="res_model">som.add.payment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_add_payment" name="Complementos de pago" parent="menu_add_root" action="action_add_payment" sequence="50"/>
+    <record id="action_add_relation" model="ir.actions.act_window">
+        <field name="name">Relaciones</field>
+        <field name="res_model">som.add.relation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_add_relation" name="Relaciones" parent="menu_add_root" action="action_add_relation" sequence="60"/>
+    <record id="action_add_batch" model="ir.actions.act_window">
+        <field name="name">Importaciones</field>
+        <field name="res_model">som.add.batch</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_add_batch" name="Importaciones" parent="menu_add_root" action="action_add_batch" sequence="70"/>
+    <record id="action_add_config" model="ir.actions.act_window">
+        <field name="name">Configuración</field>
+        <field name="res_model">som.add.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_add_config" name="Configuración" parent="menu_add_root" action="action_add_config" sequence="80" groups="account_statement_report.group_add_admin"/>
+    <record id="action_add_audit" model="ir.actions.act_window">
+        <field name="name">Auditoría</field>
+        <field name="res_model">som.add.audit</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_add_audit" name="Auditoría" parent="menu_add_root" action="action_add_audit" sequence="90" groups="account_statement_report.group_add_admin"/>
+</odoo>

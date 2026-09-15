@@ -2,7 +2,7 @@
 from io import BytesIO
 import zipfile
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase, new_test_user
 from . import fixtures_add as fx
@@ -94,7 +94,7 @@ class TestAddBackend(TransactionCase):
         with self.assertRaises(AccessError): reader.read(['total'])
         with self.assertRaises(AccessError): reader.detail()
         with self.assertRaises(AccessError): doc.concept_ids.with_user(self.users['reader']).read(['amount'])
-        with self.assertRaises(Exception): self.model('som.add.document', 'reader').explore({'companies': [self.other.id]})
+        with self.assertRaises(UserError): self.model('som.add.document', 'reader').explore({'companies': [self.other.id]})
         self.assertFalse(self.model('som.add.document', 'reader').search([('company_id', '=', self.other.id)]))
 
     def test_private_vault_and_no_generic_attachments(self):

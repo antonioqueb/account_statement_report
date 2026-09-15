@@ -94,7 +94,7 @@ class AddDocument(models.Model):
                     method=h.get('MetodoPago'), payment_form=h.get('FormaPago'), cfdi_use=r.get('UsoCFDI'),
                     complements=', '.join(c['name'] for c in parsed['complements']),
                     has_carta_porte=any(c['name'] == 'CartaPorte' for c in parsed['complements']),
-                    consistency=parsed['consistency'], parsed=parsed, alerts='\n'.join(parsed['warnings']), parser_version=cfdi.PARSER_VERSION)
+                    consistency=parsed['consistency'], parsed=parsed, alerts='\n'.join(parsed['warnings']), parser_version=parsed['parser_version'])
 
     def _raw(self):
         self.ensure_one()
@@ -172,16 +172,17 @@ class AddDocument(models.Model):
             for name in ('som.add.tax', 'som.add.application', 'som.add.payment', 'som.add.relation', 'som.add.concept'):
                 self.env[name].search([('document_id', '=', self.id)])._internal().unlink()
         common = dict(document_id=self.id)
-        line_ids = {}
+        concept_values = []
         for line in parsed['concepts']:
             a = line['attributes']
-            record = self.env['som.add.concept']._internal().create(dict(common, sequence=line['index'],
+            concept_values.append(dict(common, sequence=line['index'],
                      description=a.get('Descripcion'), identification=a.get('NoIdentificacion'), sat_code=a.get('ClaveProdServ'),
                      unit=a.get('Unidad'), unit_code=a.get('ClaveUnidad'), quantity=float(cfdi.number(a.get('Cantidad'))),
                      unit_price=float(cfdi.number(a.get('ValorUnitario'))), amount=float(cfdi.number(a.get('Importe'))),
                      discount=float(cfdi.number(a.get('Descuento'))), tax_object=a.get('ObjetoImp'),
                      commercial=line['commercial'], original=a))
-            line_ids[line['index']] = record.id
+        lines = self.env['som.add.concept']._internal().create(concept_values)
+        line_ids = {line.sequence: line.id for line in lines}
         def tax_values(tax, **extra):
             return dict(common, level=tax['level'], kind=tax['kind'], tax=tax['tax'], factor=tax['factor'],
                         rate=format(cfdi.number(tax['rate']).normalize(), 'f') if tax['rate'] is not None else False,
