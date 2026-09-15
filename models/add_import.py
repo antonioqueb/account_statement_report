@@ -1,6 +1,7 @@
 import base64
 from datetime import timedelta
 from psycopg2 import IntegrityError
+from psycopg2.errors import DeadlockDetected, SerializationFailure
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, UserError
 from ..add_services import archive, cfdi
@@ -127,6 +128,9 @@ class AddBatch(models.Model):
                     self._process_item(item)
             except AccessError:
                 raise
+            except (DeadlockDetected, SerializationFailure):
+                # Let Odoo's transaction service retry concurrency failures.
+                raise
             except Exception:
                 # No XML, tax IDs, seals, personal data or exception text in logs.
                 item._internal().write({'state': 'failed', 'code': 'technical', 'message': 'Fallo técnico al persistir; puede reintentar.'})
@@ -155,7 +159,9 @@ class AddBatch(models.Model):
                 # not visible yet; never convert that case into a second document.
                 existing = docs.search(domain, limit=1)
                 if not existing:
-                    raise
+                    # PostgreSQL repeatable-read snapshot predates the winner.
+                    # Leave this item pending for the next block/transaction.
+                    return
             else:
                 item._internal().write(dict(state='imported', document_id=doc.id, parsed=False, vault_id=False,
                                             code='imported', message='Incorporado; estado SAT: No consultado.'))
