@@ -527,6 +527,8 @@
                 <field name="company_id" string="Compañía"/>
                 <field name="batch_id" string="Lote"/>
                 <field name="filename" string="Archivo"/>
+                <field name="uuid" string="UUID de entrada"/>
+                <field name="sha256" string="SHA-256 de entrada"/>
                 <field name="state" string="Resultado"/>
                 <field name="code" string="Código"/>
                 <field name="message" string="Motivo"/>
@@ -545,6 +547,8 @@
                         <field name="company_id" string="Compañía"/>
                         <field name="batch_id" string="Lote"/>
                         <field name="filename" string="Archivo"/>
+                        <field name="uuid" string="UUID de entrada"/>
+                        <field name="sha256" string="SHA-256 de entrada"/>
                         <field name="state" string="Resultado"/>
                         <field name="code" string="Código"/>
                         <field name="message" string="Motivo"/>
