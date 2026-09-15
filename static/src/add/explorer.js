@@ -212,7 +212,33 @@ export class AddExplorer extends Component {
         this.state.uploadDirection = direction; this.state.uploadCompany = this.state.filters.companies[0];
     }
     picked(event) { this.state.uploadFiles = [...event.target.files]; }
-    dropped(event) { event.preventDefault(); if (!this.state.uploading) this.state.uploadFiles = [...event.dataTransfer.files]; }
+    dropped(event) {
+        event.preventDefault();
+        if (this.state.uploading) return;
+        // Una CARPETA arrastrada llega como File ilegible: Safari manda el
+        // cuerpo incompleto, el servidor lo descarta entero y responde 400
+        // "Session expired" (caso XML recibidos, 15 sep 2026). Se detecta
+        // aquí y se pide ZIP o los XML sueltos.
+        const items = [...(event.dataTransfer.items || [])];
+        const dirs = items.filter(i => i.kind === "file" && i.webkitGetAsEntry && i.webkitGetAsEntry()?.isDirectory);
+        if (dirs.length) {
+            this.state.uploadFiles = [];
+            this.state.error = "Se arrastró una carpeta. ADD recibe archivos XML o ZIP: comprima la carpeta en un ZIP o seleccione los XML directamente.";
+            return;
+        }
+        this.state.uploadFiles = [...event.dataTransfer.files];
+    }
+    async _checkReadable(file) {
+        // Carpeta, alias, archivo en iCloud sin descargar o borrado tras
+        // seleccionarlo: leer los primeros bytes falla o da 0. Enviarlo
+        // produce un multipart truncado que el servidor no puede parsear.
+        const name = file.name || "(sin nombre)";
+        if (!/\.(xml|zip)$/i.test(name)) return `"${name}" no es XML ni ZIP.`;
+        if (!file.size) return `"${name}" está vacío o no es un archivo legible (¿carpeta, alias o archivo aún no descargado?).`;
+        try { await file.slice(0, 4).arrayBuffer(); }
+        catch { return `"${name}" no se puede leer desde el navegador (¿carpeta, alias o archivo aún no descargado?). Comprímalo en ZIP o vuelva a seleccionarlo.`; }
+        return "";
+    }
     async uploadFile(batchId, file) {
         const data = new FormData();
         data.set("csrf_token", odoo.csrf_token); data.set("batch_id", batchId);
@@ -240,6 +266,10 @@ export class AddExplorer extends Component {
         if (!this.state.uploadFiles.length || this.state.uploading) return;
         this.state.uploading = true; this.state.error = "";
         try {
+            for (const file of this.state.uploadFiles) {
+                const problem = await this._checkReadable(file);
+                if (problem) throw new Error(problem + " No se creó ningún lote.");
+            }
             const batchId = await this.orm.call("som.add.batch", "begin", [Number(this.state.uploadCompany), this.state.uploadDirection]);
             this.state.batch = { id: batchId, pending_count: 0, progress: 0 };
             for (let i = 0; i < this.state.uploadFiles.length && this.alive && this.state.batch.state !== "cancelled"; i++) {
