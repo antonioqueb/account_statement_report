@@ -465,13 +465,15 @@ class AddExplorer(models.Model):
                 pd_, (fd, cur) = pay_dates.get(a['payment_id']), inv_dates.get(a['target_id'], (None, None))
                 if not pd_ or not fd or not a['paid']:
                     continue
-                cur = a['currency'] or cur or 'MXN'
+                # La moneda que manda es la de la FACTURA (la de la aplicación
+                # puede venir vacía o XXX en cargas anteriores a la corrección).
+                cur = cur or a['currency'] or 'MXN'
                 x = acc.setdefault(cur, dict(weighted=0.0, paid=0.0, n=0, over_30=0))
                 days = (pd_ - fd).days
                 x['weighted'] += days * a['paid']; x['paid'] += a['paid']; x['n'] += 1; x['over_30'] += 1 if days > 30 else 0
             for cur, x in acc.items():
                 ins['dso'][cur] = dict(days=(x['weighted'] / x['paid']) if x['paid'] else 0.0, applications=x['n'], paid=x['paid'],
-                                       over_30_pct=(100.0 * x['over_30'] / x['n']) if x['n'] else 0.0, domain=pay_dom + [('currency', '=', cur)])
+                                       over_30_pct=(100.0 * x['over_30'] / x['n']) if x['n'] else 0.0, domain=pay_dom + [('target_id.currency', '=', cur)])
 
         # ── Contrapartes que crecen / caen: últimos 90 días vs 90 anteriores (respecto al fin del periodo) ──
         end = date.fromisoformat(filters['end']) if filters.get('end') else today
