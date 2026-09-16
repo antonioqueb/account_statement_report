@@ -15,8 +15,7 @@
     </record>
     <record id="action_add_dashboard" model="ir.actions.client">
         <field name="name">Tablero ADD</field>
-        <field name="tag">som_add.explorer</field>
-        <field name="params" eval="{'mode': 'dashboard'}"/>
+        <field name="tag">som_add.dashboard</field>
     </record>
     <record id="action_add_issued" model="ir.actions.client">
         <field name="name">Emitidos</field>

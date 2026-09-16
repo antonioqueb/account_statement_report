@@ -1,6 +1,6 @@
 {
     'name': 'Estado de Cuenta - Reporte de Clientes',
-    'version': '19.0.4.2.0',
+    'version': '19.0.4.3.0',
     'category': 'Sales/Sales',
     'summary': 'Reporte PDF de estado de cuenta por cliente y/o proyecto',
     'author': 'Alphaqueb Consulting SAS',
@@ -34,6 +34,9 @@
             'account_statement_report/static/src/add/explorer.js',
             'account_statement_report/static/src/add/explorer.xml',
             'account_statement_report/static/src/add/explorer.scss',
+            'account_statement_report/static/src/add/dashboard.js',
+            'account_statement_report/static/src/add/dashboard.xml',
+            'account_statement_report/static/src/add/dashboard.scss',
         ],
     },
     'installable': True,

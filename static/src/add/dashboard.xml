@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="som_add.Dashboard">
+    <main class="o_add_dash" t-ref="root" t-att-data-theme="state.theme">
+        <header class="o_add_dash_top">
+            <div class="brand">
+                <span class="logo">ADD</span>
+                <div><b>Tablero documental</b><small>CFDI emitidos y recibidos · repositorio privado</small></div>
+            </div>
+            <div class="presets">
+                <button t-foreach="presets" t-as="p" t-key="p[0]" t-att-class="{on: state.preset === p[0]}" t-on-click="() => this.applyPreset(p[0])" t-esc="p[1]"/>
+            </div>
+            <div class="dates">
+                <input type="date" t-model="state.filters.start" t-on-change="customDates"/><span>a</span>
+                <input type="date" t-model="state.filters.end" t-on-change="customDates"/>
+            </div>
+            <div class="presets">
+                <button t-att-class="{on: state.filters.direction === 'received'}" t-on-click="() => this.setDirection('received')">Recibidos</button>
+                <button t-att-class="{on: state.filters.direction === 'issued'}" t-on-click="() => this.setDirection('issued')">Emitidos</button>
+                <button t-att-class="{on: state.filters.direction === 'both'}" t-on-click="() => this.setDirection('both')">Ambas</button>
+            </div>
+            <select t-if="state.boot.companies.length > 1" class="companies" multiple="multiple" t-on-change="changeCompany" title="Compañías">
+                <option t-foreach="state.boot.companies" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="state.filters.companies.includes(c.id)" t-esc="c.name"/>
+            </select>
+            <div class="top-actions">
+                <button class="back" t-on-click="() => this.openExplorer('received')">Lista recibidos</button>
+                <button class="back" t-on-click="() => this.openExplorer('issued')">Lista emitidos</button>
+                <button class="theme-btn" t-on-click="toggleTheme" title="Tema claro / oscuro"><t t-esc="state.theme === 'dark' ? '☀' : '☾'"/></button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
+            <div class="scope">
+                <span><b t-esc="directionLabel"/> · <t t-esc="state.filters.start || 'sin límite'"/> a <t t-esc="state.filters.end || 'hoy'"/></span>
+                <span t-if="d and d.currencies.length" class="src-switch">
+                    <button t-foreach="d.currencies" t-as="c" t-key="c" t-att-class="{on: c === cur}" t-on-click="() => this.setCurrency(c)" t-esc="c"/>
+                </span>
+                <span t-if="state.busy" class="mut">Consultando…</span>
+                <span t-elif="d" class="mut">Actualizado <t t-esc="d.updated_at"/> UTC</span>
+            </div>
+
+            <t t-if="d">
+                <section class="stats">
+                    <button class="stat" t-on-click="() => this.drill(k.documents.domain)">
+                        <div class="stat-l">Documentos</div><div class="stat-v" t-esc="fmt(k.documents.value, 0)"/>
+                        <div class="stat-s"><t t-foreach="d.kinds" t-as="r" t-key="r.kind"><t t-esc="r.kind"/> <t t-esc="fmt(r.count, 0)"/> · </t></div>
+                    </button>
+                    <button class="stat" t-on-click="() => this.drill(k.invoices[cur] and k.invoices[cur].domain)">
+                        <div class="stat-l">Facturas I · <t t-esc="cur"/></div><div class="stat-v" t-esc="fmtK((k.invoices[cur] || {}).amount)"/>
+                        <div class="stat-s"><t t-esc="fmt((k.invoices[cur] || {}).count, 0)"/> documentos · <t t-esc="fmt((k.invoices[cur] || {}).amount)"/></div>
+                    </button>
+                    <button class="stat bad" t-on-click="() => this.drill(k.adjustments[cur] and k.adjustments[cur].domain)">
+                        <div class="stat-l">Ajustes E · <t t-esc="cur"/></div><div class="stat-v" t-esc="fmtK((k.adjustments[cur] || {}).amount)"/>
+                        <div class="stat-s"><t t-esc="fmt((k.adjustments[cur] || {}).count, 0)"/> documentos</div>
+                    </button>
+                    <button class="stat good" t-on-click="() => this.drill(k.net[cur] and k.net[cur].domain)">
+                        <div class="stat-l">Neto I − E · <t t-esc="cur"/></div><div class="stat-v" t-esc="fmtK((k.net[cur] || {}).amount)"/>
+                        <div class="stat-s">Base documental, no utilidad</div>
+                    </button>
+                    <button class="stat" t-on-click="() => this.drill((k.payments[cur] || {}).domain, 'som.add.payment', 'ADD · pagos')">
+                        <div class="stat-l">Pagos documentados · <t t-esc="cur"/></div><div class="stat-v" t-esc="fmtK((k.payments[cur] || {}).amount)"/>
+                        <div class="stat-s"><t t-esc="fmt((k.payments[cur] || {}).count, 0)"/> pagos · <t t-esc="fmt(k.applications.value, 0)"/> aplicaciones</div>
+                    </button>
+                    <button t-att-class="{stat: true, good: k.sat_valid.pct >= 90, mid: k.sat_valid.pct >= 50 and k.sat_valid.pct &lt; 90, bad: k.sat_valid.pct &lt; 50}" t-on-click="() => this.drill(k.sat_valid.domain)">
+                        <div class="stat-l">Vigencia SAT</div><div class="stat-v" t-esc="pct(k.sat_valid.pct)"/>
+                        <div class="stat-s"><t t-esc="fmt(k.sat_valid.value, 0)"/> vigentes · <t t-esc="fmt(k.sat_valid.unknown, 0)"/> sin consultar · <t t-esc="fmt(k.sat_valid.cancelled, 0)"/> cancelados</div>
+                    </button>
+                    <button t-att-class="{stat: true, mid: k.ppd_open.value > 0}" t-on-click="() => this.drill(k.ppd_open.domain)">
+                        <div class="stat-l">PPD sin complemento</div><div class="stat-v" t-esc="fmt(k.ppd_open.value, 0)"/>
+                        <div class="stat-s"><t t-esc="fmtK(ppdAmount)"/> <t t-esc="cur"/> sin pago documentado</div>
+                    </button>
+                    <button t-att-class="{stat: true, bad: (k.imports.rejected + k.imports.failed) > 0}" t-on-click="() => this.drill(k.imports.domain, 'som.add.item', 'ADD · incidencias de carga')">
+                        <div class="stat-l">Incidencias de carga</div><div class="stat-v" t-esc="fmt(k.imports.rejected + k.imports.failed, 0)"/>
+                        <div class="stat-s"><t t-esc="fmt(k.imports.imported, 0)"/> importados · <t t-esc="fmt(k.imports.duplicate, 0)"/> duplicados · <t t-esc="fmt(k.imports.pending, 0)"/> pendientes</div>
+                    </button>
+                </section>
+
+                <section class="grid">
+                    <div class="panel wide">
+                        <div class="panel-h"><h3>Evolución mensual · facturas, ajustes y pagos · <t t-esc="cur"/></h3><span class="hint">clic en una barra abre el mes</span></div>
+                        <div class="chartbox tall"><canvas data-chart="monthly"/></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-h"><h3>Concentración por <t t-esc="counterpartLabel"/> · facturas I · <t t-esc="cur"/></h3><span class="hint">top 12</span></div>
+                        <div class="chartbox tall"><canvas data-chart="counterparts"/></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-h"><h3>Pareto de <t t-esc="counterpartLabel"/></h3><span class="hint">% acumulado</span></div>
+                        <div class="tablewrap">
+                            <table><thead><tr><th>#</th><th>Contraparte</th><th class="r">Docs</th><th class="r"><t t-esc="cur"/></th><th class="r">%</th><th class="r">Acum.</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="counterparts.rows" t-as="r" t-key="r.rfc" class="click" t-on-click="() => this.drill(r.domain)">
+                                    <td class="mut" t-esc="r_index + 1"/><td class="ell"><span class="strong" t-esc="r.name"/><br/><span class="mono" t-esc="r.rfc"/></td>
+                                    <td class="r" t-esc="fmt(r.count, 0)"/><td class="r strong" t-esc="fmt(r.value)"/><td class="r" t-esc="pct(r.percent)"/><td class="r mut" t-esc="pct(r.cumulative)"/>
+                                </tr>
+                                <tr t-if="counterparts.others > 0" class="click" t-on-click="() => this.drill(counterparts.others_domain)">
+                                    <td/><td class="mut">Otros</td><td/><td class="r" t-esc="fmt(counterparts.others)"/><td class="r" t-esc="pct(counterparts.total ? 100 * counterparts.others / counterparts.total : 0)"/><td class="r mut">100%</td>
+                                </tr>
+                                <tr t-if="!counterparts.rows.length"><td colspan="6" class="mut">Sin facturas I en este alcance.</td></tr>
+                            </tbody></table>
+                        </div>
+                    </div>
+
+                    <div class="panel"><div class="panel-h"><h3>Tipo de comprobante</h3><span class="hint">documentos</span></div><div class="chartbox"><canvas data-chart="kinds"/></div></div>
+                    <div class="panel"><div class="panel-h"><h3>PUE / PPD · facturas I · <t t-esc="cur"/></h3><span class="hint">importe</span></div><div class="chartbox"><canvas data-chart="methods"/></div></div>
+                    <div class="panel"><div class="panel-h"><h3>Estado SAT</h3><span class="hint">documentos</span></div><div class="chartbox"><canvas data-chart="sat"/></div></div>
+                    <div class="panel"><div class="panel-h"><h3>Consistencia del XML</h3><span class="hint">documentos</span></div><div class="chartbox"><canvas data-chart="consistency"/></div></div>
+
+                    <div class="panel"><div class="panel-h"><h3>Impuestos globales · <t t-esc="cur"/></h3><span class="hint">azul traslado · ámbar retención</span></div><div class="chartbox"><canvas data-chart="taxes"/></div></div>
+                    <div class="panel"><div class="panel-h"><h3>Pagos por mes · FechaPago · <t t-esc="cur"/></h3><span class="hint"><t t-esc="fmt(k.missing_uuid.value, 0)"/> aplicaciones con UUID no cargado</span></div><div class="chartbox"><canvas data-chart="payments"/></div></div>
+
+                    <div class="panel"><div class="panel-h"><h3>Conceptos por clave SAT · facturas I · <t t-esc="cur"/></h3><span class="hint">top 10</span></div><div class="chartbox tall"><canvas data-chart="concepts"/></div></div>
+                    <div class="panel">
+                        <div class="panel-h"><h3>Categorías administrativas · <t t-esc="cur"/></h3><span class="hint">conceptos clasificados</span></div>
+                        <div class="minitable">
+                            <div class="mrow head"><span>Categoría</span><b>Partidas</b><b><t t-esc="cur"/></b></div>
+                            <div t-foreach="categories" t-as="r" t-key="r.category" class="mrow click" t-on-click="() => this.drill(r.domain, 'som.add.concept', 'ADD · conceptos')"><span class="ell" t-esc="r.category"/><b t-esc="fmt(r.count, 0)"/><b t-esc="fmt(r.amount)"/></div>
+                            <div t-if="!categories.length" class="mrow mut"><span>Sin categorías en este alcance o vista de ambas direcciones.</span></div>
+                        </div>
+                    </div>
+
+                    <div class="panel wide">
+                        <div class="panel-h"><h3>Importaciones recientes</h3><span class="hint">estado de lotes · incidencias por fecha de carga</span></div>
+                        <div class="imports">
+                            <div class="tablewrap">
+                                <table><thead><tr><th>Lote</th><th>Dirección</th><th>Estado</th><th>Usuario</th><th>Creado</th><th class="r">Total</th><th class="r">Import.</th><th class="r">Dupl.</th><th class="r">Rech.</th><th class="r">Fall.</th><th class="r">Pend.</th></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="d.batches" t-as="b" t-key="b.id" class="click" t-on-click="() => this.openBatch(b.id)">
+                                        <td class="mono" t-esc="b.name"/><td t-esc="b.direction === 'issued' ? 'Emitidos' : 'Recibidos'"/>
+                                        <td><span t-att-class="{pill: true, good: b.state === 'done', mid: ['pending','processing','issues'].includes(b.state), bad: b.state === 'cancelled'}" t-esc="b.state"/></td>
+                                        <td t-esc="b.user"/><td class="mut" t-esc="b.created"/>
+                                        <td class="r" t-esc="b.total"/><td class="r" t-esc="b.imported"/><td class="r" t-esc="b.duplicate"/><td class="r neg" t-esc="b.rejected"/><td class="r neg" t-esc="b.failed"/><td class="r" t-esc="b.pending"/>
+                                    </tr>
+                                    <tr t-if="!d.batches.length"><td colspan="11" class="mut">Sin lotes en este alcance.</td></tr>
+                                </tbody></table>
+                            </div>
+                            <div class="minitable">
+                                <div class="mrow head"><span>Motivo de incidencia</span><b>Archivos</b><b/></div>
+                                <div t-foreach="d.rejections" t-as="r" t-key="r.code" class="mrow click" t-on-click="() => this.drill(r.domain, 'som.add.item', 'ADD · incidencias')"><span t-esc="r.code"/><b t-esc="fmt(r.count, 0)"/><b/></div>
+                                <div t-if="!d.rejections.length" class="mrow mut"><span>Sin incidencias en el periodo.</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <p class="notice" t-esc="d.notice"/>
+            </t>
+            <div t-elif="state.busy" class="loading">Consultando datos autorizados…</div>
+        </div>
+    </main>
+</t>
+</templates>

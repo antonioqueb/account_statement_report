@@ -199,3 +199,175 @@ class AddExplorer(models.Model):
             add('Incidencias de importación · fecha de carga', code, n, 'archivos', item_domain + [('code', '=', code)], 'som.add.item')
         return dict(rows=rows, count=count, updated_at=str(fields.Datetime.now()), filters=filters,
                     notice='Suma de perspectivas documentales; sin eliminaciones intragrupo. Monedas separadas. No equivale a contabilidad, flujo bancario ni declaración fiscal. Los importes económicos excluyen cancelados confirmados; los demás no implican vigencia SAT.')
+
+    # ══════════════════════════════════════════════════════════════════
+    # Tablero v2 (15 sep 2026): series listas para graficar, al nivel de
+    # SOM Analytics. Todo dominio de drill viaja con la serie para abrir
+    # la lista nativa filtrada con un clic.
+    # ══════════════════════════════════════════════════════════════════
+    TAX_NAMES = {'001': 'ISR', '002': 'IVA', '003': 'IEPS'}
+
+    @api.model
+    def dashboard_v2(self, filters):
+        filters = dict(filters or {})
+        domain = self._filter_domain(filters)
+        economic = self._filter_domain(filters, economic=True)
+        docs = self.with_context(active_test=False)
+        date_field = filters.get('date_basis', 'fiscal_date')
+        measure = filters.get('measure', 'base')
+        if measure not in ('base', 'total'):
+            raise UserError('Medida no permitida.')
+        direction = filters.get('direction')
+        issued = direction == 'issued'
+        rfc_field = 'receiver_rfc' if issued else 'emitter_rfc'
+        name_field = 'receiver_name' if issued else 'emitter_name'
+
+        def month_bounds(month):
+            start = str(month)[:10]
+            end = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
+            return start, str(end)[:10]
+
+        def key(month):
+            return str(month)[:7] if month else 'Sin fecha'
+
+        ie_domain = economic + [('kind', 'in', ['I', 'E'])]
+        currencies = [c for c, _ in docs._read_group(ie_domain, ['currency'], ['__count'], order='__count DESC')]
+        if not currencies:
+            currencies = [c for c, _ in docs._read_group(domain, ['currency'], ['__count'], order='__count DESC')]
+        out = dict(filters=filters, updated_at=str(fields.Datetime.now()), currencies=currencies,
+                   primary=currencies[0] if currencies else 'MXN', monthly={}, counterparts={},
+                   kpis=dict(invoices={}, adjustments={}, net={}, payments={}),
+                   methods={}, taxes={}, concepts={}, payments={}, categories={})
+
+        # ── Volumen y calidad (dominio completo, sin excluir cancelados) ──
+        count = docs.search_count(domain)
+        kinds = [dict(kind=k, count=n, domain=domain + [('kind', '=', k)]) for k, n in docs._read_group(domain, ['kind'], ['__count'])]
+        sat = [dict(state=s, count=n, domain=domain + [('sat_state', '=', s)]) for s, n in docs._read_group(domain, ['sat_state'], ['__count'])]
+        consistency = [dict(state=s, count=n, domain=domain + [('consistency', '=', s)]) for s, n in docs._read_group(domain, ['consistency'], ['__count'])]
+        sat_map = {r['state']: r['count'] for r in sat}
+        out['kinds'], out['sat'], out['consistency'] = kinds, sat, consistency
+        out['kpis']['documents'] = dict(value=count, domain=domain)
+        out['kpis']['sat_valid'] = dict(value=sat_map.get('valid', 0), total=count,
+                                        pct=(100.0 * sat_map.get('valid', 0) / count) if count else 0.0,
+                                        unknown=sat_map.get('unknown', 0), cancelled=sat_map.get('cancelled', 0),
+                                        domain=domain + [('sat_state', '=', 'valid')])
+        warn = sum(r['count'] for r in consistency if r['state'] in ('warning', 'partial'))
+        out['kpis']['alerts'] = dict(value=warn, domain=domain + [('consistency', 'in', ['warning', 'partial'])])
+
+        # ── Facturación por moneda ──
+        for cur in currencies:
+            scope = ie_domain + [('currency', '=', cur)]
+            by_kind = {k: dict(amount=a, total=t, count=n) for k, a, t, n in docs._read_group(
+                scope, ['kind'], [measure + ':sum', 'total:sum', '__count'])}
+            inv, adj = by_kind.get('I', {}), by_kind.get('E', {})
+            out['kpis'].setdefault('invoices', {})[cur] = dict(amount=inv.get('amount', 0.0), count=inv.get('count', 0), domain=scope + [('kind', '=', 'I')])
+            out['kpis'].setdefault('adjustments', {})[cur] = dict(amount=adj.get('amount', 0.0), count=adj.get('count', 0), domain=scope + [('kind', '=', 'E')])
+            out['kpis'].setdefault('net', {})[cur] = dict(amount=inv.get('amount', 0.0) - adj.get('amount', 0.0), domain=scope)
+
+            # Evolución mensual I / E (+ conteo)
+            months = {}
+            for kind, month, amount, n in docs._read_group(scope, ['kind', date_field + ':month'], [measure + ':sum', '__count']):
+                row = months.setdefault(key(month), dict(month=key(month), I=0.0, E=0.0, P=0.0, nI=0, nE=0, nP=0,
+                                                          domain=scope + ([(date_field, '>=', month_bounds(month)[0]), (date_field, '<', month_bounds(month)[1])] if month else [(date_field, '=', False)])))
+                row[kind] = amount
+                row['n' + kind] = n
+            out['monthly'][cur] = months
+
+            # Contrapartes (pareto sobre facturas I)
+            inv_scope = scope + [('kind', '=', 'I')]
+            total = inv.get('amount', 0.0) or 0.0
+            top = docs._read_group(inv_scope, [rfc_field, name_field], [measure + ':sum', '__count'], order=measure + ':sum DESC', limit=12)
+            rows, cumulative = [], 0.0
+            for rfc, name, amount, n in top:
+                cumulative += amount or 0.0
+                rows.append(dict(rfc=rfc or 'Sin RFC', name=name or rfc or 'Sin nombre', value=amount or 0.0, count=n,
+                                 percent=(100.0 * (amount or 0.0) / total) if total else 0.0,
+                                 cumulative=(100.0 * cumulative / total) if total else 0.0,
+                                 domain=inv_scope + [(rfc_field, '=', rfc)]))
+            others = total - sum(r['value'] for r in rows)
+            out['counterparts'][cur] = dict(rows=rows, others=others, total=total,
+                                            others_domain=inv_scope + [(rfc_field, 'not in', [r['rfc'] for r in rows])])
+
+            # PUE / PPD
+            out['methods'][cur] = [dict(method=m or 'Sin método', kind=k, amount=a, count=n, domain=scope + [('kind', '=', k), ('method', '=', m)])
+                                   for k, m, a, n in docs._read_group(scope, ['kind', 'method'], [measure + ':sum', '__count'])]
+
+            # Impuestos globales
+            tax_domain = [('document_id', 'any', scope), ('level', 'in', ['global', 'local'])]
+            taxes = []
+            for doc_kind, kind, tax, amount in self.env['som.add.tax']._read_group(tax_domain, ['document_kind', 'kind', 'tax'], ['amount:sum']):
+                label = '%s %s' % (self.TAX_NAMES.get(tax, tax or '?'), 'retenido' if kind == 'withholding' else 'trasladado')
+                taxes.append(dict(label=label, kind=doc_kind, nature=kind, tax=tax, amount=amount,
+                                  domain=tax_domain + [('document_kind', '=', doc_kind), ('kind', '=', kind), ('tax', '=', tax)]))
+            out['taxes'][cur] = taxes
+
+            # Conceptos (facturas I, comerciales) por clave SAT
+            concept_domain = [('document_id', 'any', inv_scope), ('commercial', '=', True)]
+            out['concepts'][cur] = [dict(code=code or 'Sin clave', unit=unit or '', amount=a, count=n, domain=concept_domain + [('sat_code', '=', code)])
+                                    for code, unit, a, n in self.env['som.add.concept']._read_group(
+                                        concept_domain, ['sat_code', 'unit_code'], ['amount:sum', '__count'], order='amount:sum DESC', limit=10)]
+            if filters.get('direction') in ('issued', 'received'):
+                out['categories'][cur] = [dict(category=c or 'Sin categoría', amount=a, count=n, domain=concept_domain + [('classification', '=', c)])
+                                          for c, a, n in self.env['som.add.concept']._read_group(
+                                              concept_domain, ['classification'], ['amount:sum', '__count'], order='amount:sum DESC', limit=8)]
+
+        # ── Pagos documentados (FechaPago / MonedaP) ──
+        payment_doc_domain = self._filter_domain(dict(filters, kind='P'), economic=True, dates=False, currency=False)
+        payment_domain = [('document_id', 'any', payment_doc_domain)]
+        for k, op in [('start', '>='), ('end', '<=')]:
+            if filters.get(k):
+                payment_domain.append(('payment_date', op, filters[k]))
+        Payment = self.env['som.add.payment']
+        for cur, month, amount, n in Payment._read_group(payment_domain, ['currency', 'payment_date:month'], ['amount:sum', '__count']):
+            bounds = month_bounds(month) if month else None
+            drill = payment_domain + [('currency', '=', cur)] + ([('payment_date', '>=', bounds[0]), ('payment_date', '<', bounds[1])] if bounds else [('payment_date', '=', False)])
+            out['payments'].setdefault(cur, {})[key(month)] = dict(month=key(month), amount=amount, count=n, domain=drill)
+            if cur in out['monthly']:
+                row = out['monthly'][cur].setdefault(key(month), dict(month=key(month), I=0.0, E=0.0, P=0.0, nI=0, nE=0, nP=0, domain=drill))
+                row['P'], row['nP'] = amount, n
+            if cur not in currencies:
+                currencies.append(cur)
+        for cur in currencies:
+            rows = out['payments'].get(cur, {})
+            out['kpis'].setdefault('payments', {})[cur] = dict(amount=sum(r['amount'] for r in rows.values()), count=sum(r['count'] for r in rows.values()),
+                                                               domain=payment_domain + [('currency', '=', cur)])
+        apps = [('payment_id', 'any', payment_domain)]
+        missing = apps + [('target_id', '=', False)]
+        out['kpis']['applications'] = dict(value=self.env['som.add.application'].search_count(apps), domain=apps)
+        out['kpis']['missing_uuid'] = dict(value=self.env['som.add.application'].search_count(missing), domain=missing)
+
+        # ── PPD sin complemento de pago cargado ──
+        ppd = economic + [('kind', '=', 'I'), ('method', '=', 'PPD')]
+        covered = {t.id for (t,) in self.env['som.add.application']._read_group([('target_id', 'any', ppd)], ['target_id'], []) if t}
+        open_domain = ppd + ([('id', 'not in', list(covered))] if covered else [])
+        out['kpis']['ppd_open'] = dict(value=docs.search_count(open_domain), domain=open_domain,
+                                       amounts={cur: a for cur, a in docs._read_group(open_domain, ['currency'], [measure + ':sum'])})
+
+        # ── Relaciones faltantes ──
+        unresolved = [('document_id', 'any', domain), ('target_id', '=', False)]
+        out['kpis']['relations_missing'] = dict(value=self.env['som.add.relation'].search_count(unresolved), domain=unresolved)
+
+        # ── Importaciones (fecha de carga) ──
+        companies = filters.get('companies') or [self.env.company.id]
+        item_domain = [('company_id', 'in', companies)]
+        batch_domain = [('company_id', 'in', companies)]
+        if direction in ('issued', 'received'):
+            item_domain.append(('batch_id.direction', '=', direction))
+            batch_domain.append(('direction', '=', direction))
+        for k, op in [('start', '>='), ('end', '<=')]:
+            if filters.get(k):
+                item_domain.append(('create_date', op, filters[k] + (' 23:59:59' if k == 'end' else '')))
+        Item = self.env['som.add.item']
+        states = {s: n for s, n in Item._read_group(item_domain, ['state'], ['__count'])}
+        out['kpis']['imports'] = dict(imported=states.get('imported', 0), duplicate=states.get('duplicate', 0),
+                                     rejected=states.get('rejected', 0), failed=states.get('failed', 0), pending=states.get('pending', 0),
+                                     domain=item_domain + [('state', 'in', ['rejected', 'failed'])])
+        out['rejections'] = [dict(code=c or 'Sin código', count=n, domain=item_domain + [('code', '=', c), ('state', 'in', ['rejected', 'failed', 'duplicate'])])
+                             for c, n in Item._read_group(item_domain + [('state', 'in', ['rejected', 'failed', 'duplicate'])], ['code'], ['__count'], order='__count DESC', limit=8)]
+        batches = self.env['som.add.batch'].search(batch_domain, order='id desc', limit=8)
+        out['batches'] = [dict(id=b.id, name=b.name, direction=b.direction, state=b.state, sealed=b.sealed, user=b.user_id.name,
+                               created=str(b.create_date)[:16], total=b.total_count, imported=b.imported_count, duplicate=b.duplicate_count,
+                               rejected=b.rejected_count, failed=b.failed_count, pending=b.pending_count) for b in batches]
+        out['notice'] = ('Perspectivas documentales; sin eliminaciones intragrupo. Monedas separadas. No equivale a contabilidad ni a '
+                         'declaración fiscal. Los importes excluyen cancelados confirmados; pagos por FechaPago; incidencias por fecha de carga.')
+        return out

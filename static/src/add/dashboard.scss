@@ -1,0 +1,93 @@
+/* Tablero ADD v2 — mismos tokens que SOM Analytics (som_dashboard.css). */
+.o_add_dash {
+    --blue: #0b57d0; --sky: #0284c7; --green: #059669; --amber: #d97706; --red: #dc2626;
+    --bg: #eef1f6; --bg2: #f7f9fc; --panel: #ffffff; --panel2: #f1f5f9; --line: rgba(15, 23, 42, .1);
+    --txt: #0f172a; --mut: #334155; --mut2: #475569;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 4px 14px rgba(15, 23, 42, .04);
+    --good: #047857; --bad: #b91c1c; --mid: #b45309;
+    --good-bg: rgba(5, 150, 105, .1); --bad-bg: rgba(220, 38, 38, .09); --mid-bg: rgba(217, 119, 6, .12);
+    &[data-theme="dark"] {
+        --blue: #3b82f6; --sky: #38bdf8; --green: #10b981; --amber: #f59e0b; --red: #ef4444;
+        --bg: #0a101e; --bg2: #0e1729; --panel: #111d33; --panel2: #16233d; --line: rgba(148, 163, 184, .13);
+        --txt: #e2e8f0; --mut: #b6c2d4; --mut2: #94a3b8; --shadow: none;
+        --good: #34d399; --bad: #f87171; --mid: #fbbf24;
+        --good-bg: rgba(16, 185, 129, .14); --bad-bg: rgba(239, 68, 68, .14); --mid-bg: rgba(245, 158, 11, .14);
+    }
+    height: 100%; overflow: auto; background: var(--bg); color: var(--txt);
+    font: 400 14px/1.45 Inter, "SF Pro Display", -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+    button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+    .o_add_dash_top {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 20px;
+        background: linear-gradient(120deg, #0b1f3a, #0b57d0 140%); color: #eaf2ff; border-bottom: 1px solid rgba(255, 255, 255, .08);
+        position: sticky; top: 0; z-index: 5;
+        .brand { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 220px; }
+        .brand .logo { display: grid; place-items: center; height: 40px; padding: 0 12px; border-radius: 12px; font-weight: 800; letter-spacing: .04em;
+            background: linear-gradient(160deg, #7dd3fc38, #3b82f61a); border: 1px solid rgba(125, 211, 252, .35); color: #a5d8ff; }
+        .brand b { display: block; font-size: 17px; letter-spacing: -.01em; color: #fff; }
+        .brand small { color: #bad6f5b3; font-size: 11.5px; }
+        .presets { display: inline-flex; gap: 2px; background: #ffffff14; border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; padding: 3px; }
+        .presets button { padding: 6px 13px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #d8e8fad9; }
+        .presets button.on { background: #fff; color: #0b57d0; }
+        .dates { display: inline-flex; align-items: center; gap: 6px; background: #ffffff14; border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; padding: 4px 10px; }
+        .dates input { background: none; border: none; color: #eaf2ff; font: 600 12.5px/1 inherit; color-scheme: dark; width: 128px; }
+        .dates input:focus { outline: none; }
+        .dates span { color: #d8e8fa8c; font-size: 12px; }
+        .companies { background: #ffffff14; color: #eaf2ff; border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; font-size: 12.5px; max-width: 220px; height: 38px; }
+        .companies option { color: #0f172a; }
+        .top-actions { display: inline-flex; gap: 8px; align-items: center; }
+        .back { color: #cfe3ff; font-size: 13px; font-weight: 600; border: 1px solid rgba(191, 219, 254, .35); border-radius: 9px; padding: 8px 14px; white-space: nowrap; }
+        .back:hover { background: #bfdbfe24; }
+        .theme-btn { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #ffffff14; border: 1px solid rgba(255, 255, 255, .14); color: #ffe9a8; font-size: 16px; }
+        .theme-btn:hover { background: #ffffff29; }
+    }
+
+    .content { padding: 16px 22px 48px; }
+    .scope { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mut); margin-bottom: 12px; }
+    .scope b { color: var(--txt); text-transform: uppercase; letter-spacing: .04em; }
+    .src-switch { display: inline-flex; gap: 2px; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 2px; }
+    .src-switch button { padding: 4px 12px; border-radius: 7px; font-size: 12px; font-weight: 700; color: var(--mut); }
+    .src-switch button.on { background: var(--blue); color: #fff; }
+    .mut { color: var(--mut2); }
+    .loading { padding: 40px; text-align: center; color: var(--mut); }
+    .alert { margin-bottom: 12px; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .stat { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 13px; padding: 13px 16px; min-width: 0; box-shadow: var(--shadow); transition: transform .12s, border-color .12s; }
+    .stat:hover { transform: translateY(-1px); border-color: var(--sky); }
+    .stat-l { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--mut2); }
+    .stat-v { font-size: 23px; font-weight: 650; letter-spacing: -.02em; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-s { font-size: 12px; color: var(--mut); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat.good .stat-v { color: var(--good); } .stat.bad .stat-v { color: var(--bad); } .stat.mid .stat-v { color: var(--mid); }
+
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+    .panel.wide { grid-column: 1 / -1; }
+    .panel-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .panel-h h3 { font-size: 13px; font-weight: 650; margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--txt); }
+    .panel-h .hint { font-size: 10.5px; color: var(--mut2); background: var(--panel2); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+    .chartbox { position: relative; height: 240px; }
+    .chartbox.tall { height: 320px; }
+    .tablewrap { overflow: auto; max-height: 340px; border: 1px solid var(--line); border-radius: 10px; flex: 1; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { position: sticky; top: 0; z-index: 1; background: var(--panel2); text-align: left; padding: 8px 10px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mut2); }
+    th.r, td.r { text-align: right; }
+    td { padding: 7px 10px; border-top: 1px solid var(--line); white-space: nowrap; }
+    tbody tr.click { cursor: pointer; } tbody tr:hover { background: var(--panel2); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: var(--blue); font-size: 11.5px; }
+    .strong { font-weight: 600; } .neg { color: var(--bad); font-weight: 600; }
+    .ell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+    .minitable { display: flex; flex-direction: column; flex: 1; }
+    .mrow { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; padding: 7px 6px; border-radius: 8px; font-size: 13px; align-items: center; }
+    .mrow.head { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--mut2); font-weight: 700; border-bottom: 1px solid var(--line); border-radius: 0; }
+    .mrow.click { cursor: pointer; } .mrow.click:hover { background: var(--panel2); }
+    .mrow b { text-align: right; min-width: 70px; }
+    .pill { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; background: var(--panel2); color: var(--mut); }
+    .pill.good { background: var(--good-bg); color: var(--good); } .pill.mid { background: var(--mid-bg); color: var(--mid); } .pill.bad { background: var(--bad-bg); color: var(--bad); }
+    .imports { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+    .notice { margin-top: 14px; font-size: 11.5px; color: var(--mut2); }
+
+    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .imports { grid-template-columns: 1fr; } }
+    @media (max-width: 767px) { .content { padding: 10px; } .o_add_dash_top { padding: 10px; } .chartbox, .chartbox.tall { height: 220px; } }
+}
