@@ -19,16 +19,17 @@
     button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 
     .o_add_dash_top {
-        display: flex; flex-direction: column; gap: 12px; padding: 14px 24px 16px;
+        display: flex; flex-direction: column; gap: 16px; padding: 16px 26px 18px;
         background: linear-gradient(120deg, #0b1f3a, #0b57d0 140%); color: #eaf2ff; border-bottom: 1px solid rgba(255, 255, 255, .08);
         position: sticky; top: 0; z-index: 5;
         .row1, .row2 { display: flex; align-items: center; gap: 14px 22px; flex-wrap: wrap; }
         .row1 { justify-content: space-between; }
-        .brand { display: flex; align-items: center; gap: 12px; min-width: 220px; }
-        .brand .logo { display: grid; place-items: center; height: 42px; padding: 0 13px; border-radius: 12px; font-weight: 800; letter-spacing: .04em;
-            background: linear-gradient(160deg, #7dd3fc38, #3b82f61a); border: 1px solid rgba(125, 211, 252, .35); color: #a5d8ff; }
-        .brand b { display: block; font-size: 18px; letter-spacing: -.01em; color: #fff; }
-        .brand small { color: #bad6f5b3; font-size: 12px; }
+        .brand { display: flex; align-items: center; gap: 16px; min-width: 300px; padding: 2px 0; }
+        .brand .logo { display: grid; place-items: center; height: 52px; min-width: 52px; padding: 0 14px; border-radius: 14px; font-size: 15px; font-weight: 800; letter-spacing: .06em;
+            background: linear-gradient(160deg, #7dd3fc38, #3b82f61a); border: 1px solid rgba(125, 211, 252, .35); color: #a5d8ff; flex: none; }
+        .brand > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+        .brand b { display: block; font-size: 21px; font-weight: 700; line-height: 1.15; letter-spacing: -.01em; color: #fff; white-space: nowrap; }
+        .brand small { display: block; color: #bad6f5cc; font-size: 12.5px; line-height: 1.3; letter-spacing: .01em; }
         .group { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #bad6f5b3; }
         .presets { display: inline-flex; gap: 2px; background: #ffffff14; border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; padding: 3px; }
