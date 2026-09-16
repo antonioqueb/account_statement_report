@@ -3,39 +3,55 @@
 <t t-name="som_add.Dashboard">
     <main class="o_add_dash" t-ref="root" t-att-data-theme="state.theme">
         <header class="o_add_dash_top">
-            <div class="brand">
-                <span class="logo">ADD</span>
-                <div><b>Tablero documental</b><small>CFDI emitidos y recibidos · repositorio privado</small></div>
+            <div class="row1">
+                <div class="brand">
+                    <span class="logo">ADD</span>
+                    <div><b>Tablero documental</b><small>CFDI emitidos y recibidos · repositorio privado</small></div>
+                </div>
+                <div class="top-actions">
+                    <button class="back" t-on-click="() => this.openExplorer('received')">Lista recibidos</button>
+                    <button class="back" t-on-click="() => this.openExplorer('issued')">Lista emitidos</button>
+                    <button class="theme-btn" t-on-click="toggleTheme" title="Tema claro / oscuro"><t t-esc="state.theme === 'dark' ? '☀' : '☾'"/></button>
+                </div>
             </div>
-            <div class="presets">
-                <button t-foreach="presets" t-as="p" t-key="p[0]" t-att-class="{on: state.preset === p[0]}" t-on-click="() => this.applyPreset(p[0])" t-esc="p[1]"/>
-            </div>
-            <div class="dates">
-                <input type="date" t-model="state.filters.start" t-on-change="customDates"/><span>a</span>
-                <input type="date" t-model="state.filters.end" t-on-change="customDates"/>
-            </div>
-            <div class="presets">
-                <button t-att-class="{on: state.filters.direction === 'received'}" t-on-click="() => this.setDirection('received')">Recibidos</button>
-                <button t-att-class="{on: state.filters.direction === 'issued'}" t-on-click="() => this.setDirection('issued')">Emitidos</button>
-                <button t-att-class="{on: state.filters.direction === 'both'}" t-on-click="() => this.setDirection('both')">Ambas</button>
-            </div>
-            <select t-if="state.boot.companies.length > 1" class="companies" multiple="multiple" t-on-change="changeCompany" title="Compañías">
-                <option t-foreach="state.boot.companies" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="state.filters.companies.includes(c.id)" t-esc="c.name"/>
-            </select>
-            <div class="top-actions">
-                <button class="back" t-on-click="() => this.openExplorer('received')">Lista recibidos</button>
-                <button class="back" t-on-click="() => this.openExplorer('issued')">Lista emitidos</button>
-                <button class="theme-btn" t-on-click="toggleTheme" title="Tema claro / oscuro"><t t-esc="state.theme === 'dark' ? '☀' : '☾'"/></button>
+            <div class="row2">
+                <div class="group">
+                    <span class="lbl">Periodo</span>
+                    <div class="presets">
+                        <button t-foreach="presets" t-as="p" t-key="p[0]" t-att-class="{on: state.preset === p[0]}" t-on-click="() => this.applyPreset(p[0])" t-esc="p[1]"/>
+                    </div>
+                    <div class="dates">
+                        <input type="date" t-model="state.filters.start" t-on-change="customDates"/><span>a</span>
+                        <input type="date" t-model="state.filters.end" t-on-change="customDates"/>
+                    </div>
+                </div>
+                <div class="group">
+                    <span class="lbl">Dirección</span>
+                    <div class="presets">
+                        <button t-att-class="{on: state.filters.direction === 'received'}" t-on-click="() => this.setDirection('received')">Recibidos</button>
+                        <button t-att-class="{on: state.filters.direction === 'issued'}" t-on-click="() => this.setDirection('issued')">Emitidos</button>
+                        <button t-att-class="{on: state.filters.direction === 'both'}" t-on-click="() => this.setDirection('both')">Ambas</button>
+                    </div>
+                </div>
+                <div class="group" t-if="d and d.currencies.length > 1">
+                    <span class="lbl">Moneda</span>
+                    <div class="presets">
+                        <button t-foreach="d.currencies" t-as="c" t-key="c" t-att-class="{on: c === cur}" t-on-click="() => this.setCurrency(c)" t-esc="c"/>
+                    </div>
+                </div>
+                <div class="group" t-if="state.boot.companies.length > 1">
+                    <span class="lbl">Compañías</span>
+                    <select class="companies" multiple="multiple" t-on-change="changeCompany" title="Compañías">
+                        <option t-foreach="state.boot.companies" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="state.filters.companies.includes(c.id)" t-esc="c.name"/>
+                    </select>
+                </div>
             </div>
         </header>
 
         <div class="content">
             <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
             <div class="scope">
-                <span><b t-esc="directionLabel"/> · <t t-esc="state.filters.start || 'sin límite'"/> a <t t-esc="state.filters.end || 'hoy'"/></span>
-                <span t-if="d and d.currencies.length" class="src-switch">
-                    <button t-foreach="d.currencies" t-as="c" t-key="c" t-att-class="{on: c === cur}" t-on-click="() => this.setCurrency(c)" t-esc="c"/>
-                </span>
+                <span><b t-esc="directionLabel"/> · <t t-esc="state.filters.start || 'sin límite'"/> a <t t-esc="state.filters.end || 'hoy'"/> · cifras en <b t-esc="cur"/></span>
                 <span t-if="state.busy" class="mut">Consultando…</span>
                 <span t-elif="d" class="mut">Actualizado <t t-esc="d.updated_at"/> UTC</span>
             </div>
