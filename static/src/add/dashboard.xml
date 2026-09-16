@@ -86,10 +86,6 @@
                         <div class="stat-l">PPD sin complemento</div><div class="stat-v" t-esc="fmt(k.ppd_open.value, 0)"/>
                         <div class="stat-s"><t t-esc="fmtK(ppdAmount)"/> <t t-esc="cur"/> sin pago documentado</div>
                     </button>
-                    <button t-att-class="{stat: true, bad: (k.imports.rejected + k.imports.failed) > 0}" t-on-click="() => this.drill(k.imports.domain, 'som.add.item', 'ADD · incidencias de carga')">
-                        <div class="stat-l">Incidencias de carga</div><div class="stat-v" t-esc="fmt(k.imports.rejected + k.imports.failed, 0)"/>
-                        <div class="stat-s"><t t-esc="fmt(k.imports.imported, 0)"/> importados · <t t-esc="fmt(k.imports.duplicate, 0)"/> duplicados · <t t-esc="fmt(k.imports.pending, 0)"/> pendientes</div>
-                    </button>
                 </section>
 
                 <section class="grid">
