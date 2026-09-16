@@ -99,30 +99,86 @@
                     </div>
 
                     <div class="panel">
-                        <div class="panel-h"><h3>Concentración por <t t-esc="counterpartLabel"/> · facturas I · <t t-esc="cur"/></h3><span class="hint">top 12</span></div>
-                        <div class="chartbox tall"><canvas data-chart="counterparts"/></div>
+                        <div class="panel-h"><h3>Comparativo del periodo · facturas I · <t t-esc="cur"/></h3><span class="hint">vs periodo anterior y año anterior</span></div>
+                        <div class="tablewrap" t-if="compare and compare.current">
+                            <table><thead><tr><th>Periodo</th><th class="r">Facturado</th><th class="r">Docs</th><th class="r">Ticket</th><th class="r"><t t-esc="counterpartLabel"/></th><th class="r">Var.</th></tr></thead>
+                            <tbody>
+                                <tr class="click" t-on-click="() => this.drill(compare.current.domain)"><td><span class="strong">Actual</span><br/><span class="mut" t-esc="compare.current.start + ' a ' + compare.current.end"/></td><td class="r strong" t-esc="fmt(compare.current.invoices)"/><td class="r" t-esc="fmt(compare.current.count, 0)"/><td class="r" t-esc="fmt(compare.current.ticket)"/><td class="r" t-esc="fmt(compare.current.counterparts, 0)"/><td class="r">—</td></tr>
+                                <tr class="click" t-if="compare.previous" t-on-click="() => this.drill(compare.previous.domain)"><td>Periodo anterior<br/><span class="mut" t-esc="compare.previous.start + ' a ' + compare.previous.end"/></td><td class="r" t-esc="fmt(compare.previous.invoices)"/><td class="r" t-esc="fmt(compare.previous.count, 0)"/><td class="r" t-esc="fmt(compare.previous.ticket)"/><td class="r" t-esc="fmt(compare.previous.counterparts, 0)"/><td class="r"><span t-att-class="'pill ' + deltaClass(compare.current.invoices, compare.previous.invoices)" t-esc="delta(compare.current.invoices, compare.previous.invoices)"/></td></tr>
+                                <tr class="click" t-if="compare.year_ago" t-on-click="() => this.drill(compare.year_ago.domain)"><td>Mismo periodo, año anterior<br/><span class="mut" t-esc="compare.year_ago.start + ' a ' + compare.year_ago.end"/></td><td class="r" t-esc="fmt(compare.year_ago.invoices)"/><td class="r" t-esc="fmt(compare.year_ago.count, 0)"/><td class="r" t-esc="fmt(compare.year_ago.ticket)"/><td class="r" t-esc="fmt(compare.year_ago.counterparts, 0)"/><td class="r"><span t-att-class="'pill ' + deltaClass(compare.current.invoices, compare.year_ago.invoices)" t-esc="delta(compare.current.invoices, compare.year_ago.invoices)"/></td></tr>
+                            </tbody></table>
+                        </div>
+                        <p t-else="" class="mut">Elige un periodo con fecha inicial y final para comparar.</p>
+                        <div class="kv">
+                            <span>Ajustes E sobre facturación</span><b t-att-class="{bad: adjustmentsRatio > 5}" t-esc="pct(adjustmentsRatio)"/>
+                            <t t-if="publicShare"><span>Facturado a Público en General</span><b t-esc="pct(publicShare.pct) + ' · ' + fmtK(publicShare.amount)"/></t>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-h"><h3><t t-esc="isIssued ? 'Cartera por cobrar documental' : 'Cartera por pagar documental'"/> · PPD sin complemento · <t t-esc="cur"/></h3><span class="hint">saldo insoluto al día de hoy</span></div>
+                        <t t-if="aging">
+                            <div class="kv">
+                                <span>Saldo abierto</span><b t-esc="fmt(aging.total) + ' · ' + aging.count + ' facturas'"/>
+                                <span>Con más de 30 días</span><b t-att-class="{bad: aging.overdue_30 > 0}" t-esc="fmt(aging.overdue_30)"/>
+                                <t t-if="dso"><span><t t-esc="isIssued ? 'Días de cobro' : 'Días de pago'"/> (ponderado)</span><b t-esc="fmt(dso.days, 0) + ' días · ' + pct(dso.over_30_pct) + ' pagos tardíos'"/></t>
+                            </div>
+                            <div class="chartbox"><canvas data-chart="aging"/></div>
+                        </t>
+                        <p t-else="" class="mut">Sin facturas PPD abiertas: todo tiene complemento de pago o es PUE.</p>
                     </div>
                     <div class="panel">
-                        <div class="panel-h"><h3>Pareto de <t t-esc="counterpartLabel"/></h3><span class="hint">% acumulado</span></div>
+                        <div class="panel-h"><h3>Saldo abierto por <t t-esc="counterpartLabel"/></h3><span class="hint">top 10 · antigüedad máxima</span></div>
                         <div class="tablewrap">
-                            <table><thead><tr><th>#</th><th>Contraparte</th><th class="r">Docs</th><th class="r"><t t-esc="cur"/></th><th class="r">%</th><th class="r">Acum.</th></tr></thead>
+                            <table><thead><tr><th>Contraparte</th><th class="r">Facturas</th><th class="r">Saldo <t t-esc="cur"/></th><th class="r">Más antigua</th></tr></thead>
                             <tbody>
-                                <tr t-foreach="counterparts.rows" t-as="r" t-key="r.rfc" class="click" t-on-click="() => this.drill(r.domain)">
-                                    <td class="mut" t-esc="r_index + 1"/><td class="ell"><span class="strong" t-esc="r.name"/><br/><span class="mono" t-esc="r.rfc"/></td>
-                                    <td class="r" t-esc="fmt(r.count, 0)"/><td class="r strong" t-esc="fmt(r.value)"/><td class="r" t-esc="pct(r.percent)"/><td class="r mut" t-esc="pct(r.cumulative)"/>
+                                <tr t-foreach="(aging and aging.counterparts) || []" t-as="r" t-key="r.rfc" class="click" t-on-click="() => this.drill(r.domain)">
+                                    <td class="ell"><span class="strong" t-esc="r.name || r.rfc"/><br/><span class="mono" t-esc="r.rfc"/></td><td class="r" t-esc="r.count"/><td class="r strong" t-esc="fmt(r.amount)"/><td class="r"><span t-att-class="{pill: true, good: r.oldest &lt;= 30, mid: r.oldest > 30 and r.oldest &lt;= 90, bad: r.oldest > 90}" t-esc="r.oldest + ' d'"/></td>
                                 </tr>
-                                <tr t-if="counterparts.others > 0" class="click" t-on-click="() => this.drill(counterparts.others_domain)">
-                                    <td/><td class="mut">Otros</td><td/><td class="r" t-esc="fmt(counterparts.others)"/><td class="r" t-esc="pct(counterparts.total ? 100 * counterparts.others / counterparts.total : 0)"/><td class="r mut">100%</td>
-                                </tr>
-                                <tr t-if="!counterparts.rows.length"><td colspan="6" class="mut">Sin facturas I en este alcance.</td></tr>
+                                <tr t-if="!aging or !aging.counterparts.length"><td colspan="4" class="mut">Sin saldos abiertos.</td></tr>
                             </tbody></table>
                         </div>
                     </div>
 
-                    <div class="panel"><div class="panel-h"><h3>Tipo de comprobante</h3><span class="hint">documentos</span></div><div class="chartbox"><canvas data-chart="kinds"/></div></div>
-                    <div class="panel"><div class="panel-h"><h3>PUE / PPD · facturas I · <t t-esc="cur"/></h3><span class="hint">importe</span></div><div class="chartbox"><canvas data-chart="methods"/></div></div>
-                    <div class="panel"><div class="panel-h"><h3>Estado SAT</h3><span class="hint">documentos</span></div><div class="chartbox"><canvas data-chart="sat"/></div></div>
-                    <div class="panel"><div class="panel-h"><h3>Consistencia del XML</h3><span class="hint">documentos</span></div><div class="chartbox"><canvas data-chart="consistency"/></div></div>
+                    <div class="panel">
+                        <div class="panel-h"><h3>Concentración por <t t-esc="counterpartLabel"/> · facturas I · <t t-esc="cur"/></h3><span class="hint">top 12</span></div>
+                        <div class="chartbox tall"><canvas data-chart="counterparts"/></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-h"><h3>Quién crece y quién cae · últimos 90 días vs 90 previos</h3><span class="hint"><t t-esc="movement.recent ? movement.recent[0] + ' a ' + movement.recent[1] : ''"/></span></div>
+                        <div class="two">
+                            <div class="minitable">
+                                <div class="mrow head"><span>Crecen</span><b>Reciente</b><b>Var.</b></div>
+                                <div t-foreach="movement.up" t-as="m" t-key="'u' + m.rfc" class="mrow click" t-on-click="() => this.drill(m.domain)"><span class="ell" t-esc="m.name"/><b t-esc="fmtK(m.recent)"/><b><span class="pill good" t-esc="delta(m.recent, m.prior)"/></b></div>
+                                <div t-if="!movement.up.length" class="mrow mut"><span>Sin crecimientos.</span></div>
+                            </div>
+                            <div class="minitable">
+                                <div class="mrow head"><span>Caen</span><b>Reciente</b><b>Var.</b></div>
+                                <div t-foreach="movement.down" t-as="m" t-key="'d' + m.rfc" class="mrow click" t-on-click="() => this.drill(m.domain)"><span class="ell" t-esc="m.name"/><b t-esc="fmtK(m.recent)"/><b><span class="pill bad" t-esc="m.recent ? delta(m.recent, m.prior) : 'sin facturas'"/></b></div>
+                                <div t-if="!movement.down.length" class="mrow mut"><span>Sin caídas.</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-h"><h3>IVA trasladado vs acreditable por mes · <t t-esc="cur"/></h3><span class="hint">ambas direcciones · estimación documental</span></div>
+                        <div class="chartbox tall"><canvas data-chart="vat"/></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-h"><h3><t t-esc="isIssued ? 'Clientes' : 'Proveedores'"/> nuevos vs recurrentes por mes</h3><span class="hint">nuevo = primera factura en toda la historia</span></div>
+                        <div class="chartbox tall"><canvas data-chart="cohort"/></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-h"><h3>Lo que más se factura · descripción de concepto · <t t-esc="cur"/></h3><span class="hint">top 12</span></div>
+                        <div class="chartbox tall"><canvas data-chart="descriptions"/></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-h"><h3>Formas de pago · facturas I · <t t-esc="cur"/></h3><span class="hint">importe</span></div>
+                        <div class="chartbox"><canvas data-chart="forms"/></div>
+                        <div class="panel-h" style="margin-top: 12px;"><h3>PUE / PPD</h3></div>
+                        <div class="chartbox short"><canvas data-chart="methods"/></div>
+                    </div>
 
                     <div class="panel"><div class="panel-h"><h3>Impuestos globales · <t t-esc="cur"/></h3><span class="hint">azul traslado · ámbar retención</span></div><div class="chartbox"><canvas data-chart="taxes"/></div></div>
                     <div class="panel"><div class="panel-h"><h3>Pagos por mes · FechaPago · <t t-esc="cur"/></h3><span class="hint"><t t-esc="fmt(k.missing_uuid.value, 0)"/> aplicaciones con UUID no cargado</span></div><div class="chartbox"><canvas data-chart="payments"/></div></div>
@@ -133,9 +189,12 @@
                         <div class="minitable">
                             <div class="mrow head"><span>Categoría</span><b>Partidas</b><b><t t-esc="cur"/></b></div>
                             <div t-foreach="categories" t-as="r" t-key="r.category" class="mrow click" t-on-click="() => this.drill(r.domain, 'som.add.concept', 'ADD · conceptos')"><span class="ell" t-esc="r.category"/><b t-esc="fmt(r.count, 0)"/><b t-esc="fmt(r.amount)"/></div>
-                            <div t-if="!categories.length" class="mrow mut"><span>Sin categorías en este alcance o vista de ambas direcciones.</span></div>
+                            <div t-if="!categories.length" class="mrow mut"><span>Sin categorías capturadas en este alcance. Se asignan desde el detalle del documento.</span></div>
                         </div>
                     </div>
+
+                    <div class="panel"><div class="panel-h"><h3>Tipo de comprobante</h3><span class="hint">documentos</span></div><div class="chartbox short"><canvas data-chart="kinds"/></div></div>
+                    <div class="panel"><div class="panel-h"><h3>Calidad documental</h3><span class="hint">estado SAT · consistencia</span></div><div class="two"><div class="chartbox short"><canvas data-chart="sat"/></div><div class="chartbox short"><canvas data-chart="consistency"/></div></div></div>
 
                     <div class="panel wide">
                         <div class="panel-h"><h3>Importaciones recientes</h3><span class="hint">estado de lotes · incidencias por fecha de carga</span></div>

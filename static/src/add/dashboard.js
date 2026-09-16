@@ -112,6 +112,21 @@ export class AddDashboard extends Component {
         return Object.values(this.per("payments") || {}).filter(r => r.month !== "Sin fecha").sort((a, b) => a.month.localeCompare(b.month));
     }
     get ppdAmount() { return (this.k.ppd_open?.amounts || {})[this.cur] || 0; }
+    get ins() { return this.d?.insights || {}; }
+    insPer(section) { return (this.ins[section] || {})[this.cur]; }
+    get compare() { return this.insPer("compare") || null; }
+    get aging() { return this.insPer("aging") || null; }
+    get dso() { return this.insPer("dso") || null; }
+    get movement() { return this.insPer("movement") || { up: [], down: [], new: [], lost: [] }; }
+    get cohort() { return this.insPer("cohort") || []; }
+    get vat() { return this.insPer("vat") || []; }
+    get forms() { return this.insPer("forms") || []; }
+    get descriptions() { return this.insPer("descriptions") || []; }
+    get adjustmentsRatio() { return (this.ins.adjustments_ratio || {})[this.cur] || 0; }
+    get publicShare() { return this.insPer("public") || null; }
+    delta(now, before) { if (!before) return now ? "nuevo" : "—"; return `${now >= before ? "+" : ""}${this.fmt((now - before) / before * 100, 1)}%`; }
+    deltaClass(now, before) { if (!before) return now ? "good" : ""; return now >= before ? "good" : "bad"; }
+    agingBuckets() { const a = this.aging; return a ? Object.entries(a.buckets).map(([b, v]) => ({ bucket: b, ...v })) : []; }
     satLabel(s) { return SAT[s] || s; }
     consLabel(s) { return CONS[s] || s; }
     kindLabel(k) { return KINDS[k] || k; }
@@ -215,6 +230,41 @@ export class AddDashboard extends Component {
             ] },
             options: { ...this.base(p), scales: { x: { ticks: { color: p.txt }, grid: { color: p.line } }, y: { ticks: { color: p.txt, callback: (v) => this.fmtK(v) }, grid: { color: p.line } }, y2: { position: "right", ticks: { color: p.txt, precision: 0 }, grid: { display: false } } },
                 onClick: (_e, els) => { if (els.length) this.drill(pay[els[0].index].domain, "som.add.payment", "ADD · pagos"); } } });
+
+        const buckets = this.agingBuckets();
+        this.chart("aging", { type: "bar",
+            data: { labels: buckets.map(b => `${b.bucket} días`), datasets: [{ label: `Saldo abierto ${this.cur}`, data: buckets.map(b => b.amount),
+                backgroundColor: [bar(p.green), bar(p.sky), bar(p.amber), bar(p.red, "b3"), bar(p.red)], borderRadius: 4 }] },
+            options: { ...this.base(p), plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${this.fmt(c.parsed.y)} ${this.cur} · ${buckets[c.dataIndex].count} facturas` } } },
+                onClick: () => { if (this.aging) this.drill(this.aging.domain); } } });
+
+        const cohort = this.cohort;
+        this.chart("cohort", { type: "bar",
+            data: { labels: cohort.map(r => this.monthLabel(r.month)), datasets: [
+                { label: "Recurrentes", data: cohort.map(r => r.recurring), backgroundColor: bar(p.blue), borderRadius: 3, stack: "n" },
+                { label: "Nuevos", data: cohort.map(r => r.new), backgroundColor: bar(p.green), borderRadius: 3, stack: "n" },
+            ] },
+            options: { ...this.base(p), scales: { x: { stacked: true, ticks: { color: p.txt }, grid: { color: p.line } }, y: { stacked: true, ticks: { color: p.txt, precision: 0 }, grid: { color: p.line } } },
+                plugins: { legend: { labels: { color: p.txt, boxWidth: 10 } }, tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${c.parsed.y} · ${this.fmtK(c.dataset.label === "Nuevos" ? cohort[c.dataIndex].new_amount : cohort[c.dataIndex].recurring_amount)} ${this.cur}` } } } } });
+
+        const vat = this.vat;
+        this.chart("vat", { type: "bar",
+            data: { labels: vat.map(r => this.monthLabel(r.month)), datasets: [
+                { label: "IVA trasladado (emitidos)", data: vat.map(r => r.issued), backgroundColor: bar(p.blue), borderRadius: 4, order: 2 },
+                { label: "IVA acreditable (recibidos)", data: vat.map(r => r.received), backgroundColor: bar(p.amber), borderRadius: 4, order: 3 },
+                { label: "IVA neto documental", data: vat.map(r => r.net), type: "line", borderColor: p.red, backgroundColor: p.red, tension: .3, pointRadius: 3, order: 1 },
+            ] },
+            options: this.base(p) });
+
+        const forms = this.forms;
+        this.donut("forms", forms.map(r => r.label), forms.map(r => r.amount), [p.blue, p.green, p.amber, p.violet, p.teal, p.slate, p.red], forms.map(r => r.domain), p);
+
+        const descriptions = this.descriptions;
+        this.chart("descriptions", { type: "bar",
+            data: { labels: descriptions.map(r => r.description.slice(0, 34)), datasets: [{ label: this.cur, data: descriptions.map(r => r.amount), backgroundColor: bar(p.teal, "b3"), borderRadius: 4 }] },
+            options: { ...this.base(p, { indexAxis: "y" }), scales: { x: { ticks: { color: p.txt, callback: (v) => this.fmtK(v) }, grid: { color: p.line } }, y: { ticks: { color: p.txt, font: { size: 10.5 } }, grid: { display: false } } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => descriptions[items[0].dataIndex].description, label: (c) => ` ${this.fmt(c.parsed.x)} ${this.cur} · ${descriptions[c.dataIndex].count} partidas` } } },
+                onClick: (_e, els) => { if (els.length) this.drill(descriptions[els[0].index].domain, "som.add.concept", "ADD · conceptos"); } } });
 
         const concepts = this.concepts;
         this.chart("concepts", { type: "bar",

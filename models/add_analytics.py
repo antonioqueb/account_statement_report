@@ -368,6 +368,176 @@ class AddExplorer(models.Model):
         out['batches'] = [dict(id=b.id, name=b.name, direction=b.direction, state=b.state, sealed=b.sealed, user=b.user_id.name,
                                created=str(b.create_date)[:16], total=b.total_count, imported=b.imported_count, duplicate=b.duplicate_count,
                                rejected=b.rejected_count, failed=b.failed_count, pending=b.pending_count) for b in batches]
+        # ══════════════════════════════════════════════════════════════
+        # ANÁLISIS (16 sep 2026): preguntas de negocio, no solo conteos.
+        # ══════════════════════════════════════════════════════════════
+        out['insights'] = self._dashboard_insights(filters, domain, economic, currencies, measure, date_field, rfc_field, name_field)
         out['notice'] = ('Perspectivas documentales; sin eliminaciones intragrupo. Monedas separadas. No equivale a contabilidad ni a '
                          'declaración fiscal. Los importes excluyen cancelados confirmados; pagos por FechaPago; incidencias por fecha de carga.')
         return out
+
+    @api.model
+    def _dashboard_insights(self, filters, domain, economic, currencies, measure, date_field, rfc_field, name_field):
+        docs = self.with_context(active_test=False)
+        today = fields.Date.context_today(self)
+        direction = filters.get('direction')
+        ins = dict(compare={}, aging={}, dso={}, movement={}, cohort={}, vat={}, forms={}, descriptions={}, adjustments_ratio={}, public={})
+        ie_domain = economic + [('kind', 'in', ['I', 'E'])]
+
+        def amount_by_cur(dom, kind='I'):
+            return {c: dict(amount=a or 0.0, count=n) for c, a, n in docs._read_group(dom + [('kind', '=', kind)], ['currency'], [measure + ':sum', '__count'])}
+
+        def rfcs_by_cur(dom):
+            return {c: n for c, n in docs._read_group(dom + [('kind', '=', 'I')], ['currency'], [rfc_field + ':count_distinct'])}
+
+        # ── Comparativo: periodo anterior de igual duración y mismo periodo del año anterior ──
+        if filters.get('start') and filters.get('end'):
+            start, end = date.fromisoformat(filters['start']), date.fromisoformat(filters['end'])
+            days = (end - start).days + 1
+            periods = {
+                'current': (start, end),
+                'previous': (start - timedelta(days=days), start - timedelta(days=1)),
+                'year_ago': (date(start.year - 1, start.month, min(start.day, 28)), date(end.year - 1, end.month, min(end.day, 28))),
+            }
+            for key, (a, b) in periods.items():
+                dom = self._filter_domain(dict(filters, start=str(a), end=str(b)), economic=True)
+                inv = amount_by_cur(dom, 'I')
+                adj = amount_by_cur(dom, 'E')
+                rf = rfcs_by_cur(dom)
+                for cur in currencies:
+                    ins['compare'].setdefault(cur, {})[key] = dict(
+                        start=str(a), end=str(b), invoices=inv.get(cur, {}).get('amount', 0.0), count=inv.get(cur, {}).get('count', 0),
+                        adjustments=adj.get(cur, {}).get('amount', 0.0), counterparts=rf.get(cur, 0),
+                        ticket=(inv.get(cur, {}).get('amount', 0.0) / inv.get(cur, {}).get('count', 1)) if inv.get(cur, {}).get('count') else 0.0,
+                        domain=dom + [('kind', '=', 'I'), ('currency', '=', cur)])
+
+        # ── Ajustes sobre facturación y Público en General ──
+        for cur in currencies:
+            scope = ie_domain + [('currency', '=', cur)]
+            by_kind = {k: a or 0.0 for k, a in docs._read_group(scope, ['kind'], [measure + ':sum'])}
+            ins['adjustments_ratio'][cur] = (100.0 * by_kind.get('E', 0.0) / by_kind['I']) if by_kind.get('I') else 0.0
+            if direction == 'issued':
+                pub = scope + [('kind', '=', 'I'), ('receiver_rfc', 'in', ['XAXX010101000', 'XEXX010101000'])]
+                amount = sum(a or 0.0 for (a,) in docs._read_group(pub, [], [measure + ':sum']))
+                ins['public'][cur] = dict(amount=amount, pct=(100.0 * amount / by_kind['I']) if by_kind.get('I') else 0.0, domain=pub)
+
+        # ── Cartera documental PPD abierta AL DÍA DE HOY (sin filtro de fechas): saldo y antigüedad ──
+        open_base = self._filter_domain(dict(filters, start='', end=''), economic=True) + [('kind', '=', 'I'), ('method', '=', 'PPD')]
+        paid_by_doc = {}
+        for target, paid in self.env['som.add.application']._read_group([('target_id', 'any', open_base)], ['target_id'], ['paid:sum']):
+            if target:
+                paid_by_doc[target.id] = paid or 0.0
+        buckets = [('0-30', 0, 30), ('31-60', 31, 60), ('61-90', 61, 90), ('91-180', 91, 180), ('+180', 181, 10 ** 6)]
+        rows = docs.search_read(open_base, ['id', 'total', 'fiscal_date', 'currency', rfc_field, name_field, 'uuid'], order='fiscal_date asc', limit=20000)
+        aging = {}
+        for r in rows:
+            remaining = (r['total'] or 0.0) - paid_by_doc.get(r['id'], 0.0)
+            if remaining <= 0.01:
+                continue
+            cur = r['currency'] or 'MXN'
+            age = (today - r['fiscal_date']).days if r['fiscal_date'] else 0
+            bucket = next(b for b, lo, hi in buckets if lo <= age <= hi)
+            a = aging.setdefault(cur, dict(total=0.0, count=0, buckets={b: dict(amount=0.0, count=0) for b, _, _ in buckets}, counterparts={}, ids=[]))
+            a['total'] += remaining; a['count'] += 1; a['ids'].append(r['id'])
+            a['buckets'][bucket]['amount'] += remaining; a['buckets'][bucket]['count'] += 1
+            cp = a['counterparts'].setdefault(r[rfc_field] or 'Sin RFC', dict(rfc=r[rfc_field] or 'Sin RFC', name=r[name_field] or '', amount=0.0, count=0, oldest=age, ids=[]))
+            cp['amount'] += remaining; cp['count'] += 1; cp['oldest'] = max(cp['oldest'], age); cp['ids'].append(r['id'])
+        for cur, a in aging.items():
+            top = sorted(a['counterparts'].values(), key=lambda c: -c['amount'])[:10]
+            for c in top:
+                c['domain'] = [('id', 'in', c.pop('ids'))]
+            a['counterparts'] = top
+            a['domain'] = [('id', 'in', a.pop('ids'))]
+            a['overdue_30'] = sum(v['amount'] for b, v in a['buckets'].items() if b != '0-30')
+        ins['aging'] = aging
+
+        # ── Días de cobro/pago documentales: FechaPago − fecha de la factura, ponderado por importe pagado ──
+        pay_dom = [('target_id', 'any', economic + [('kind', '=', 'I')]), ('payment_id.payment_date', '!=', False)]
+        for k, op in [('start', '>='), ('end', '<=')]:
+            if filters.get(k):
+                pay_dom.append(('payment_id.payment_date', op, filters[k]))
+        apps = self.env['som.add.application'].search_read(pay_dom, ['paid', 'currency', 'payment_id', 'target_id'], limit=20000, load=None)
+        if apps:
+            pay_dates = {p.id: p.payment_date for p in self.env['som.add.payment'].browse(list({a['payment_id'] for a in apps}))}
+            inv_dates = {d.id: (d.fiscal_date, d.currency) for d in docs.browse(list({a['target_id'] for a in apps}))}
+            acc = {}
+            for a in apps:
+                pd_, (fd, cur) = pay_dates.get(a['payment_id']), inv_dates.get(a['target_id'], (None, None))
+                if not pd_ or not fd or not a['paid']:
+                    continue
+                cur = a['currency'] or cur or 'MXN'
+                x = acc.setdefault(cur, dict(weighted=0.0, paid=0.0, n=0, over_30=0))
+                days = (pd_ - fd).days
+                x['weighted'] += days * a['paid']; x['paid'] += a['paid']; x['n'] += 1; x['over_30'] += 1 if days > 30 else 0
+            for cur, x in acc.items():
+                ins['dso'][cur] = dict(days=(x['weighted'] / x['paid']) if x['paid'] else 0.0, applications=x['n'], paid=x['paid'],
+                                       over_30_pct=(100.0 * x['over_30'] / x['n']) if x['n'] else 0.0, domain=pay_dom + [('currency', '=', cur)])
+
+        # ── Contrapartes que crecen / caen: últimos 90 días vs 90 anteriores (respecto al fin del periodo) ──
+        end = date.fromisoformat(filters['end']) if filters.get('end') else today
+        recent = (end - timedelta(days=89), end)
+        prior = (end - timedelta(days=179), end - timedelta(days=90))
+        base_nodates = self._filter_domain(dict(filters, start='', end=''), economic=True) + [('kind', '=', 'I')]
+        for cur in currencies:
+            def window(a, b):
+                dom = base_nodates + [('currency', '=', cur), (date_field, '>=', str(a)), (date_field, '<=', str(b))]
+                return {rfc: dict(name=name, amount=amt or 0.0) for rfc, name, amt in docs._read_group(dom, [rfc_field, name_field], [measure + ':sum'])}, dom
+            now, now_dom = window(*recent)
+            before, before_dom = window(*prior)
+            moves = []
+            for rfc in set(now) | set(before):
+                cur_amt, prev_amt = now.get(rfc, {}).get('amount', 0.0), before.get(rfc, {}).get('amount', 0.0)
+                if max(cur_amt, prev_amt) <= 0:
+                    continue
+                moves.append(dict(rfc=rfc or 'Sin RFC', name=(now.get(rfc) or before.get(rfc))['name'] or rfc or 'Sin nombre',
+                                  recent=cur_amt, prior=prev_amt, delta=cur_amt - prev_amt,
+                                  pct=((cur_amt - prev_amt) / prev_amt * 100.0) if prev_amt else None,
+                                  domain=now_dom + [(rfc_field, '=', rfc)]))
+            moves.sort(key=lambda m: m['delta'])
+            ins['movement'][cur] = dict(up=[m for m in reversed(moves) if m['delta'] > 0][:6], down=[m for m in moves if m['delta'] < 0][:6],
+                                        recent=[str(recent[0]), str(recent[1])], prior=[str(prior[0]), str(prior[1])],
+                                        new=[m for m in reversed(moves) if m['prior'] == 0 and m['recent'] > 0][:6],
+                                        lost=[m for m in moves if m['recent'] == 0 and m['prior'] > 0][:6])
+
+        # ── Cohortes: contrapartes nuevas vs recurrentes por mes (primera factura en toda la historia) ──
+        first_seen = {rfc: d for rfc, d in docs._read_group(base_nodates, [rfc_field], ['fiscal_date:min'])}
+        for cur in currencies:
+            months = {}
+            for rfc, month, amt, n in docs._read_group(economic + [('kind', '=', 'I'), ('currency', '=', cur)], [rfc_field, date_field + ':month'], [measure + ':sum', '__count']):
+                if not month:
+                    continue
+                key = str(month)[:7]
+                row = months.setdefault(key, dict(month=key, new=0, recurring=0, new_amount=0.0, recurring_amount=0.0))
+                fs = first_seen.get(rfc)
+                is_new = bool(fs) and str(fs)[:7] == key
+                row['new' if is_new else 'recurring'] += 1
+                row['new_amount' if is_new else 'recurring_amount'] += amt or 0.0
+            ins['cohort'][cur] = [months[k] for k in sorted(months)]
+
+        # ── IVA trasladado (emitidos) vs IVA acreditable (recibidos) por mes, ambas direcciones, misma compañía ──
+        both = self._filter_domain(dict(filters, direction='both'), economic=True)
+        Tax = self.env['som.add.tax']
+        for side, flag in (('issued', 'issued'), ('received', 'received')):
+            tdom = [('document_id', 'any', both + [(flag, '=', True), ('kind', 'in', ['I', 'E'])]), ('level', 'in', ['global', 'local']), ('kind', '=', 'transfer'), ('tax', '=', '002')]
+            for cur, kind, month, amt in Tax._read_group(tdom, ['currency', 'document_kind', 'fiscal_date:month'], ['amount:sum']):
+                if not month:
+                    continue
+                key = str(month)[:7]
+                row = ins['vat'].setdefault(cur, {}).setdefault(key, dict(month=key, issued=0.0, received=0.0))
+                row[side] += (amt or 0.0) * (-1 if kind == 'E' else 1)
+        for cur in list(ins['vat']):
+            ins['vat'][cur] = [dict(r, net=r['issued'] - r['received']) for _, r in sorted(ins['vat'][cur].items())]
+
+        # ── Formas de pago (facturas I) ──
+        FORMS = {'01': 'Efectivo', '02': 'Cheque', '03': 'Transferencia', '04': 'Tarjeta de crédito', '28': 'Tarjeta de débito', '99': 'Por definir', '30': 'Aplicación de anticipos'}
+        for cur in currencies:
+            scope = economic + [('kind', '=', 'I'), ('currency', '=', cur)]
+            ins['forms'][cur] = [dict(code=f or '—', label=FORMS.get(f, f or 'Sin forma'), amount=a or 0.0, count=n, domain=scope + [('payment_form', '=', f)])
+                                 for f, a, n in docs._read_group(scope, ['payment_form'], [measure + ':sum', '__count'], order=measure + ':sum DESC')]
+
+        # ── Descripciones de concepto que más pesan (facturas I) ──
+        for cur in currencies:
+            cdom = [('document_id', 'any', economic + [('kind', '=', 'I'), ('currency', '=', cur)]), ('commercial', '=', True)]
+            ins['descriptions'][cur] = [dict(description=(d or 'Sin descripción')[:80], amount=a or 0.0, count=n, domain=cdom + [('description', '=', d)])
+                                        for d, a, n in self.env['som.add.concept']._read_group(cdom, ['description'], ['amount:sum', '__count'], order='amount:sum DESC', limit=12)]
+        return ins
