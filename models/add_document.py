@@ -300,7 +300,12 @@ class AddPayment(models.Model):
     sequence = fields.Integer()
     payment_date = fields.Date(index=True)
     fiscal_datetime = fields.Char()
-    currency = fields.Char(index=True)
+    # MonedaP del nodo Pago. related=None es obligatorio: som.add.child define
+    # currency como related al documento y Odoo FUSIONA los atributos del
+    # campo heredado, así que sin esto la MonedaP capturada al crear se
+    # pisaba con la Moneda del CFDI de pago (siempre XXX) — todos los pagos
+    # quedaban en 'XXX' y el tablero no podía sumarlos por moneda.
+    currency = fields.Char(related=None, index=True)
     exchange_rate = fields.Float(digits=(24, 12), aggregator=None)
     amount = fields.Float(digits=(24, 6), aggregator=None)
     form = fields.Char()
@@ -315,7 +320,8 @@ class AddApplication(models.Model):
     payment_id = fields.Many2one('som.add.payment', required=True, ondelete='cascade', index=True)
     target_uuid = fields.Char(index=True)
     target_id = fields.Many2one('som.add.document', ondelete='set null')
-    currency = fields.Char()
+    # MonedaDR de la aplicación (mismo motivo que en som.add.payment).
+    currency = fields.Char(related=None)
     equivalence = fields.Char()
     partiality = fields.Char()
     previous = fields.Float(digits=(24, 6), aggregator=None)
